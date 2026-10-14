@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Search, X, TrendingUp, Globe, Loader2, Zap, Building2, Menu } from "lucide-react";
+import { Search, X, MoreVertical, Building2 } from "lucide-react";
 import { searchTickers } from "../api";
 
 export default function Navbar({
-  aiStatus = "idle",
-  onConnectAI,
-  usdInrRate,
   onSelectTicker,
   mobileOpen = false,
   onToggleMobile
@@ -14,7 +11,9 @@ export default function Navbar({
   const [results, setResults] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const containerRef = useRef(null);
+  const mobileInputRef = useRef(null);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -26,6 +25,13 @@ export default function Navbar({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Auto-focus mobile search input when opened
+  useEffect(() => {
+    if (mobileSearchOpen && mobileInputRef.current) {
+      mobileInputRef.current.focus();
+    }
+  }, [mobileSearchOpen]);
 
   // Debounced search (case-insensitive)
   useEffect(() => {
@@ -50,6 +56,7 @@ export default function Navbar({
     onSelectTicker(symbol);
     setQuery("");
     setIsOpen(false);
+    setMobileSearchOpen(false);
   };
 
   const handleKeyDown = (e) => {
@@ -60,6 +67,7 @@ export default function Navbar({
       }
     } else if (e.key === "Escape") {
       setIsOpen(false);
+      setMobileSearchOpen(false);
     }
   };
 
@@ -79,300 +87,367 @@ export default function Navbar({
       position: "relative",
       zIndex: 100
     }}>
-      {/* Brand Identity */}
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        {/* Mobile menu drawer trigger button */}
-        <button
-          onClick={onToggleMobile}
-          className="mobile-menu-btn"
-          aria-label="Toggle Navigation Drawer"
-        >
-          {mobileOpen ? <X size={18} /> : <Menu size={18} />}
-        </button>
-
-        <img
-          src="/astragenx-logo.jpg"
-          alt="AstraGenX ArthaX"
-          style={{
-            width: "36px",
-            height: "36px",
-            borderRadius: "10px",
-            objectFit: "cover",
-            border: "1px solid rgba(255, 255, 255, 0.12)",
-            boxShadow: "0 4px 14px rgba(255, 69, 58, 0.2)"
-          }}
-        />
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "17px",
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              color: "#ffffff"
-            }}>
-              ArthaX
-            </span>
-            <span style={{
-              fontSize: "10px",
-              fontWeight: 600,
-              padding: "1px 6px",
-              borderRadius: "9999px",
-              background: "rgba(255, 255, 255, 0.08)",
-              color: "var(--text-secondary)",
-              letterSpacing: "0.04em",
-              textTransform: "uppercase"
-            }}>
-              2.0
-            </span>
-          </div>
-          <p className="nav-brand-subtitle" style={{ fontSize: "11px", color: "var(--text-secondary)", margin: 0, fontWeight: 400 }}>
-            AstraGenX Intelligence
-          </p>
-        </div>
-      </div>
-
-      {/* Inline Apple Search Bar with Anchored Dropdown (No full-screen popup) */}
-      <div ref={containerRef} className="nav-search-container" style={{ position: "relative" }}>
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          background: "rgba(255, 255, 255, 0.06)",
-          border: `1px solid ${isOpen ? "rgba(10, 132, 255, 0.5)" : "var(--border-subtle)"}`,
-          borderRadius: "9999px",
-          padding: "8px 16px",
-          transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
-          boxShadow: isOpen ? "0 0 0 3px rgba(10, 132, 255, 0.15)" : "none"
-        }}>
-          <Search size={15} style={{ color: isOpen ? "var(--apple-blue)" : "var(--text-secondary)" }} />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => { if (query.trim()) setIsOpen(true); }}
-            onKeyDown={handleKeyDown}
-            placeholder="Search company (e.g. apple, tata, nvda)..."
-            style={{
-              flex: 1,
-              background: "transparent",
-              border: "none",
-              outline: "none",
-              color: "#ffffff",
-              fontSize: "13px",
-              fontFamily: "var(--font-sans)"
-            }}
-          />
-          {query ? (
+      {/* State 1: Mobile Full-Width Search Bar Mode (Logo & text disappear) */}
+      {mobileSearchOpen ? (
+        <div ref={containerRef} className="nav-mobile-search-full">
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            background: "rgba(255, 255, 255, 0.08)",
+            border: "1px solid var(--apple-blue)",
+            borderRadius: "9999px",
+            padding: "8px 14px",
+            width: "100%",
+            boxShadow: "0 0 0 3px rgba(10, 132, 255, 0.15)"
+          }}>
+            <Search size={16} style={{ color: "var(--apple-blue)", flexShrink: 0 }} />
+            <input
+              ref={mobileInputRef}
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Search ticker (e.g. apple, tata, nvda)..."
+              style={{
+                flex: 1,
+                minWidth: 0,
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                color: "#ffffff",
+                fontSize: "14px",
+                fontFamily: "var(--font-sans)"
+              }}
+            />
             <button
-              onClick={() => { setQuery(""); setIsOpen(false); }}
+              onClick={() => {
+                setQuery("");
+                setIsOpen(false);
+                setMobileSearchOpen(false);
+              }}
               style={{
                 background: "transparent",
                 border: "none",
                 color: "var(--text-secondary)",
                 cursor: "pointer",
+                padding: "4px",
                 display: "flex",
-                alignItems: "center",
-                padding: "2px"
+                alignItems: "center"
               }}
+              aria-label="Close search"
             >
-              <X size={14} />
+              <X size={17} />
             </button>
-          ) : (
-            <kbd style={{
-              fontSize: "10px",
-              padding: "2px 5px",
-              background: "rgba(255, 255, 255, 0.08)",
-              borderRadius: "4px",
-              color: "var(--text-secondary)"
-            }}>
-              ↵
-            </kbd>
-          )}
-        </div>
+          </div>
 
-        {/* Anchored Inline Dropdown List */}
-        {isOpen && (
-          <div style={{
-            position: "absolute",
-            top: "calc(100% + 8px)",
-            left: 0,
-            right: 0,
-            background: "rgba(18, 20, 26, 0.96)",
-            backdropFilter: "blur(28px) saturate(190%)",
-            WebkitBackdropFilter: "blur(28px) saturate(190%)",
-            border: "1px solid rgba(255, 255, 255, 0.12)",
-            borderRadius: "16px",
-            boxShadow: "var(--shadow-card)",
-            maxHeight: "340px",
-            overflowY: "auto",
-            padding: "6px",
-            zIndex: 100,
-            animation: "fadeIn 0.15s ease-out"
-          }}>
-            {loading ? (
-              <div style={{ padding: "14px", textAlign: "center", color: "var(--text-secondary)", fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-                <Loader2 size={13} className="spin-animation" style={{ color: "var(--apple-blue)" }} />
-                <span>Searching markets for "{query}"...</span>
-              </div>
-            ) : results.length === 0 ? (
-              <div style={{ padding: "16px", textAlign: "center", color: "var(--text-secondary)", fontSize: "12px" }}>
-                No companies found matching "{query}".
-              </div>
-            ) : (
-              results.map((item) => (
-                <div
-                  key={item.symbol}
-                  onClick={() => handleSelect(item.symbol)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "8px 12px",
-                    borderRadius: "10px",
-                    cursor: "pointer",
-                    transition: "background 0.15s ease"
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)"}
-                  onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
-                    <div style={{
-                      width: "28px",
-                      height: "28px",
-                      borderRadius: "7px",
-                      background: "rgba(255, 255, 255, 0.06)",
+          {/* Mobile Search Autocomplete Dropdown */}
+          {isOpen && (
+            <div style={{
+              position: "absolute",
+              top: "calc(100% + 8px)",
+              left: 0,
+              right: 0,
+              background: "rgba(18, 20, 26, 0.96)",
+              backdropFilter: "blur(28px)",
+              WebkitBackdropFilter: "blur(28px)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "16px",
+              boxShadow: "0 20px 40px rgba(0, 0, 0, 0.8)",
+              maxHeight: "360px",
+              overflowY: "auto",
+              padding: "6px",
+              zIndex: 1000
+            }}>
+              {loading ? (
+                <div style={{ padding: "16px", textAlign: "center", color: "var(--text-secondary)", fontSize: "12px" }}>
+                  Searching verified symbols...
+                </div>
+              ) : results.length === 0 ? (
+                <div style={{ padding: "16px", textAlign: "center", color: "var(--text-secondary)", fontSize: "12px" }}>
+                  No matching tickers found
+                </div>
+              ) : (
+                results.map((item) => (
+                  <div
+                    key={item.symbol}
+                    onClick={() => handleSelect(item.symbol)}
+                    style={{
                       display: "flex",
                       alignItems: "center",
-                      justifyContent: "center",
-                      color: "var(--apple-cyan)",
-                      flexShrink: 0
-                    }}>
-                      <Building2 size={14} />
-                    </div>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <span style={{ fontWeight: 600, color: "#ffffff", fontSize: "13px" }}>
-                          {item.symbol}
-                        </span>
-                        <span style={{
-                          fontSize: "10px",
-                          padding: "1px 5px",
-                          borderRadius: "4px",
-                          background: "rgba(255, 255, 255, 0.08)",
-                          color: "var(--text-secondary)"
-                        }}>
-                          {item.exchange || "GLOBAL"}
-                        </span>
-                      </div>
+                      justifyContent: "space-between",
+                      padding: "10px 12px",
+                      borderRadius: "10px",
+                      cursor: "pointer",
+                      transition: "background 0.15s ease"
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
                       <div style={{
-                        fontSize: "11px",
-                        color: "var(--text-secondary)",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        maxWidth: "240px"
+                        width: "28px",
+                        height: "28px",
+                        borderRadius: "7px",
+                        background: "rgba(255, 255, 255, 0.06)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "var(--apple-blue)",
+                        flexShrink: 0
                       }}>
-                        {item.name}
+                        <Building2 size={14} />
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <span style={{ fontWeight: 600, color: "#ffffff", fontSize: "13px" }}>
+                            {item.symbol}
+                          </span>
+                          <span style={{
+                            fontSize: "10px",
+                            padding: "1px 5px",
+                            borderRadius: "4px",
+                            background: "rgba(255, 255, 255, 0.08)",
+                            color: "var(--text-secondary)"
+                          }}>
+                            {item.exchange || "GLOBAL"}
+                          </span>
+                        </div>
+                        <div style={{
+                          fontSize: "11px",
+                          color: "var(--text-secondary)",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          maxWidth: "200px"
+                        }}>
+                          {item.name}
+                        </div>
                       </div>
                     </div>
                   </div>
-
-                  <span style={{ fontSize: "11px", color: "var(--apple-blue)", fontWeight: 500, flexShrink: 0, marginLeft: "8px" }}>
-                    Select ↵
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Right Intelligence Status & Genuine FX Pill */}
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        {/* Genuine USD/INR Live FX Pill */}
-        <div className="nav-fx-pill" style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          background: "rgba(255, 255, 255, 0.04)",
-          border: "1px solid var(--border-subtle)",
-          padding: "6px 12px",
-          borderRadius: "9999px",
-          fontSize: "12px",
-          color: "var(--text-secondary)"
-        }}>
-          <Globe size={13} style={{ color: "var(--apple-cyan)" }} />
-          <span>
-            {usdInrRate ? (
-              <>1 USD = <strong style={{ color: "#ffffff" }}>₹{Number(usdInrRate).toFixed(2)}</strong></>
-            ) : (
-              <span>USD/INR Live FX</span>
-            )}
-          </span>
+                ))
+              )}
+            </div>
+          )}
         </div>
+      ) : (
+        /* State 2: Default Brand Identity + Search */
+        <>
+          {/* Brand Identity */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            {/* Mobile Vertical 3-Dot Button */}
+            <button
+              onClick={onToggleMobile}
+              className="mobile-menu-btn"
+              aria-label="Toggle Navigation Drawer"
+            >
+              <MoreVertical size={18} />
+            </button>
 
-        {/* 3-State AI Connection Trigger */}
-        {aiStatus === "live" ? (
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "7px",
-            background: "rgba(48, 209, 88, 0.1)",
-            border: "1px solid rgba(48, 209, 88, 0.3)",
-            padding: "6px 14px",
-            borderRadius: "9999px",
-            fontSize: "12px",
-            fontWeight: 600,
-            color: "var(--apple-green)",
-            letterSpacing: "-0.01em"
-          }}>
-            <div
-              className="breathing-dot"
+            {/* Circular AstraGenX Logo */}
+            <img
+              src="/astragenx-logo.jpg"
+              alt="AstraGenX ArthaX"
               style={{
-                width: "7px",
-                height: "7px",
+                width: "36px",
+                height: "36px",
                 borderRadius: "50%",
-                background: "var(--apple-green)",
-                boxShadow: "0 0 8px var(--apple-green)"
+                objectFit: "cover",
+                border: "1px solid rgba(255, 255, 255, 0.16)",
+                boxShadow: "0 0 12px rgba(255, 69, 58, 0.25)"
               }}
             />
-            <span>AI is LIVE</span>
+
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: "19px",
+                  fontWeight: 800,
+                  letterSpacing: "-0.03em",
+                  color: "#ffffff"
+                }}>
+                  ArthaX
+                </span>
+                <span style={{
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  padding: "1px 6px",
+                  borderRadius: "9999px",
+                  background: "rgba(255, 255, 255, 0.08)",
+                  color: "var(--text-secondary)",
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase"
+                }}>
+                  2.0
+                </span>
+              </div>
+              <p style={{
+                fontSize: "10.5px",
+                color: "var(--text-secondary)",
+                margin: 0,
+                fontWeight: 500,
+                letterSpacing: "-0.01em",
+                whiteSpace: "nowrap"
+              }}>
+                From Family of AstraGenX
+              </p>
+            </div>
           </div>
-        ) : aiStatus === "connecting" ? (
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            background: "rgba(255, 214, 10, 0.12)",
-            border: "1px solid rgba(255, 214, 10, 0.3)",
-            padding: "6px 14px",
-            borderRadius: "9999px",
-            fontSize: "12px",
-            fontWeight: 600,
-            color: "var(--apple-gold)"
-          }}>
-            <Loader2 size={13} className="spin-animation" style={{ color: "var(--apple-gold)" }} />
-            <span>Connecting to AI...</span>
-          </div>
-        ) : (
-          <button
-            onClick={onConnectAI}
-            className="apple-button apple-button-primary"
-            style={{
-              padding: "6px 14px",
-              fontSize: "12px",
+
+          {/* Desktop Inline Search Bar with Anchored Dropdown */}
+          <div ref={containerRef} className="nav-desktop-search">
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              background: "rgba(255, 255, 255, 0.06)",
+              border: `1px solid ${isOpen ? "rgba(10, 132, 255, 0.5)" : "var(--border-subtle)"}`,
               borderRadius: "9999px",
-              cursor: "pointer",
-              gap: "6px",
-              boxShadow: "0 4px 14px rgba(10, 132, 255, 0.3)"
-            }}
+              padding: "8px 16px",
+              transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+              boxShadow: isOpen ? "0 0 0 3px rgba(10, 132, 255, 0.15)" : "none"
+            }}>
+              <Search size={15} style={{ color: isOpen ? "var(--apple-blue)" : "var(--text-secondary)" }} />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => { if (query.trim()) setIsOpen(true); }}
+                onKeyDown={handleKeyDown}
+                placeholder="Search company (e.g. apple, tata, nvda)..."
+                style={{
+                  flex: 1,
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  color: "#ffffff",
+                  fontSize: "13px",
+                  fontFamily: "var(--font-sans)"
+                }}
+              />
+              {query && (
+                <button
+                  onClick={() => { setQuery(""); setIsOpen(false); }}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "var(--text-secondary)",
+                    cursor: "pointer",
+                    padding: 0
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            {/* Anchored Floating Dropdown (Desktop) */}
+            {isOpen && (
+              <div style={{
+                position: "absolute",
+                top: "calc(100% + 8px)",
+                left: 0,
+                right: 0,
+                background: "rgba(18, 20, 26, 0.95)",
+                backdropFilter: "blur(28px)",
+                WebkitBackdropFilter: "blur(28px)",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: "16px",
+                boxShadow: "0 20px 40px rgba(0, 0, 0, 0.8)",
+                maxHeight: "360px",
+                overflowY: "auto",
+                padding: "6px",
+                zIndex: 1000
+              }}>
+                {loading ? (
+                  <div style={{ padding: "16px", textAlign: "center", color: "var(--text-secondary)", fontSize: "12px" }}>
+                    Searching verified market symbols...
+                  </div>
+                ) : results.length === 0 ? (
+                  <div style={{ padding: "16px", textAlign: "center", color: "var(--text-secondary)", fontSize: "12px" }}>
+                    No matching companies or tickers found
+                  </div>
+                ) : (
+                  results.map((item) => (
+                    <div
+                      key={item.symbol}
+                      onClick={() => handleSelect(item.symbol)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "10px 14px",
+                        borderRadius: "10px",
+                        cursor: "pointer",
+                        transition: "background 0.15s ease"
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                        <div style={{
+                          width: "30px",
+                          height: "30px",
+                          borderRadius: "8px",
+                          background: "rgba(255, 255, 255, 0.06)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "var(--apple-blue)",
+                          flexShrink: 0
+                        }}>
+                          <Building2 size={14} />
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <span style={{ fontWeight: 600, color: "#ffffff", fontSize: "13px" }}>
+                              {item.symbol}
+                            </span>
+                            <span style={{
+                              fontSize: "10px",
+                              padding: "1px 5px",
+                              borderRadius: "4px",
+                              background: "rgba(255, 255, 255, 0.08)",
+                              color: "var(--text-secondary)"
+                            }}>
+                              {item.exchange || "GLOBAL"}
+                            </span>
+                          </div>
+                          <div style={{
+                            fontSize: "11px",
+                            color: "var(--text-secondary)",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            maxWidth: "240px"
+                          }}>
+                            {item.name}
+                          </div>
+                        </div>
+                      </div>
+
+                      <span style={{ fontSize: "11px", color: "var(--apple-blue)", fontWeight: 500, flexShrink: 0, marginLeft: "8px" }}>
+                        Select ↵
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Search Icon Trigger Button (On right of Navbar) */}
+          <button
+            onClick={() => setMobileSearchOpen(true)}
+            className="nav-mobile-search-toggle"
+            aria-label="Open Search"
           >
-            <Zap size={13} style={{ fill: "#ffffff" }} />
-            <span>Connect AI</span>
+            <Search size={17} />
           </button>
-        )}
-      </div>
+        </>
+      )}
     </header>
   );
 }

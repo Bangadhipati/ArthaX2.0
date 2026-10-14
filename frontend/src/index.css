@@ -450,5 +450,60 @@ input[type="range"].cupertino-slider::-webkit-slider-thumb:hover {
   }
 }
 
+/* Responsive Search Mode in Navbar */
+.nav-desktop-search {
+  display: block;
+  position: relative;
+  width: 380px;
+  max-width: 45%;
+}
+
+.nav-mobile-search-toggle {
+  display: none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  border-radius: 9999px;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-mobile-search-toggle:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--border-highlight);
+}
+
+@media (max-width: 767px) {
+  .nav-desktop-search {
+    display: none;
+  }
+  .nav-mobile-search-toggle {
+    display: flex;
+  }
+}
+
+.nav-mobile-search-full {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  position: relative;
+  animation: fadeIn 0.16s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 
 

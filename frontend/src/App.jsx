@@ -9,7 +9,7 @@ import Sidebar from "./components/Sidebar";
 import ComingSoonPage from "./components/ComingSoonPage";
 import { fetchStockData, fetchForecastData, checkBackendHealth } from "./api";
 import { POPULAR_TICKERS } from "./mockData";
-import { Zap, Loader2, Sparkles, TrendingUp, ShieldCheck, LineChart } from "lucide-react";
+import { Zap, Loader2, Sparkles, TrendingUp, ShieldCheck, LineChart, Globe } from "lucide-react";
 
 export default function App() {
   const [activePage, setActivePage] = useState("market-intelligence");
@@ -98,11 +98,8 @@ export default function App() {
 
   return (
     <div className="app-container">
-      {/* Top Navbar with Inline Search Dropdown & Genuine FX Status */}
+      {/* Top Navbar */}
       <Navbar
-        aiStatus={aiStatus}
-        onConnectAI={handleConnectAI}
-        usdInrRate={stock?.usdInrRate}
         onSelectTicker={handleSelectTicker}
         mobileOpen={mobileSidebarOpen}
         onToggleMobile={() => setMobileSidebarOpen((prev) => !prev)}
@@ -128,6 +125,115 @@ export default function App() {
             <>
               {aiStatus === "live" ? (
           <>
+            {/* Top Sub-Header Bar (Attached to right of sidebar, above Quick Watch) */}
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "12px",
+              marginBottom: "16px",
+              paddingBottom: "12px",
+              borderBottom: "1px solid var(--border-subtle)"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  color: "#ffffff",
+                  letterSpacing: "-0.01em"
+                }}>
+                  Market Intelligence
+                </span>
+                <span style={{
+                  fontSize: "10px",
+                  fontWeight: 600,
+                  padding: "1px 6px",
+                  borderRadius: "9999px",
+                  background: "rgba(10, 132, 255, 0.12)",
+                  color: "var(--apple-blue)"
+                }}>
+                  Live Terminal
+                </span>
+              </div>
+
+              {/* Dollar INR currency exchange value and beside it Connect AI Live stuff */}
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                {/* Dollar INR currency exchange value */}
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  background: "rgba(255, 255, 255, 0.05)",
+                  border: "1px solid var(--border-subtle)",
+                  padding: "5px 12px",
+                  borderRadius: "9999px",
+                  fontSize: "12px",
+                  color: "var(--text-secondary)"
+                }}>
+                  <Globe size={13} style={{ color: "var(--apple-cyan)" }} />
+                  <span>1 USD = <strong style={{ color: "#ffffff" }}>₹{stock?.usdInrRate ? Number(stock.usdInrRate).toFixed(2) : "95.14"}</strong></span>
+                </div>
+
+                {/* Connect AI Live status pill */}
+                {aiStatus === "live" ? (
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "7px",
+                    background: "rgba(48, 209, 88, 0.12)",
+                    border: "1px solid rgba(48, 209, 88, 0.3)",
+                    padding: "5px 12px",
+                    borderRadius: "9999px",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    color: "var(--apple-green)"
+                  }}>
+                    <div
+                      className="breathing-dot"
+                      style={{
+                        width: "7px",
+                        height: "7px",
+                        borderRadius: "50%",
+                        background: "var(--apple-green)",
+                        boxShadow: "0 0 8px var(--apple-green)"
+                      }}
+                    />
+                    <span>AI is LIVE</span>
+                  </div>
+                ) : aiStatus === "connecting" ? (
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    background: "rgba(255, 214, 10, 0.12)",
+                    border: "1px solid rgba(255, 214, 10, 0.3)",
+                    padding: "5px 12px",
+                    borderRadius: "9999px",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    color: "var(--apple-gold)"
+                  }}>
+                    <Loader2 size={13} className="spin-animation" style={{ color: "var(--apple-gold)" }} />
+                    <span>Connecting to AI...</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleConnectAI}
+                    className="apple-button apple-button-primary"
+                    style={{
+                      padding: "5px 14px",
+                      fontSize: "12px",
+                      fontWeight: 600
+                    }}
+                  >
+                    <Zap size={13} />
+                    <span>Connect AI</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* Apple Quick Ticker Tape */}
             <div style={{
               display: "flex",
