@@ -16,7 +16,7 @@ export default function Sidebar({
         />
       )}
       <aside className={`macos-sidebar ${mobileOpen ? "mobile-open" : ""}`}>
-        <div>
+        <div className="sidebar-top-section">
           <div style={{
             fontSize: "10.5px",
             fontWeight: 600,
@@ -51,6 +51,35 @@ export default function Sidebar({
                 Market Intelligence
               </span>
             </button>
+          </div>
+        </div>
+
+        <div className="sidebar-footer">
+          <div className="sidebar-footer-card">
+            <div className="sidebar-footer-brand">
+              <span className="sidebar-footer-version">ArthaX v2.0</span>
+              <span className="sidebar-footer-dot">•</span>
+              <span className="sidebar-footer-powered">
+                Powered By{" "}
+                <a
+                  href="https://astragenx.netlify.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="sidebar-footer-link"
+                >
+                  AstraGenX
+                  <span className="sidebar-footer-arrow">↗</span>
+                </a>
+              </span>
+            </div>
+
+            <div className="sidebar-footer-credits">
+              <div>All rights reserved</div>
+              <div className="sidebar-footer-author">
+                Developed by{" "}
+                <span className="sidebar-footer-author-name">Debarghya Bhowmick</span>
+              </div>
+            </div>
           </div>
         </div>
       </aside>

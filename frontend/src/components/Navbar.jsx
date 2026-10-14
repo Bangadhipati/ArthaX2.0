@@ -255,11 +255,12 @@ export default function Navbar({
                 borderRadius: "50%",
                 objectFit: "cover",
                 border: "1px solid rgba(255, 255, 255, 0.16)",
-                boxShadow: "0 0 12px rgba(255, 69, 58, 0.25)"
+                boxShadow: "0 0 12px rgba(255, 69, 58, 0.25)",
+                flexShrink: 0
               }}
             />
 
-            <div>
+            <div style={{ minWidth: 0, display: "flex", flexDirection: "column" }}>
               <div style={{ display: "flex", alignItems: "center" }}>
                 <span className="nav-brand-title">
                   Artha<span className="brand-x">X</span>
