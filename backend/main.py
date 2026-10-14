@@ -290,25 +290,26 @@ def search_ticker(q: str = Query(..., min_length=1, description="Company name or
     if len(query) < 1:
         return {"results": []}
 
-    url = f"https://query2.finance.yahoo.com/v1/finance/search?q={query}"
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    url = f"https://query2.finance.yahoo.com/v1/finance/search?q={query}&quotesCount=35&newsCount=0&enableFuzzyQuery=true&quotesQueryId=tss_match_phrase_query"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "*/*"
+    }
 
     try:
-        res = requests.get(url, headers=headers, timeout=5)
-        if res.status_code != 200:
-            return {"results": []}
-
-        data = res.json()
-        valid_types = {"EQUITY", "ETF", "MUTUALFUND", "CRYPTOCURRENCY", "CURRENCY"}
+        res = requests.get(url, headers=headers, timeout=6)
         results = []
 
-        for quote in data.get("quotes", []):
-            quote_type = quote.get("quoteType")
-            if quote_type in valid_types:
+        if res.status_code == 200:
+            data = res.json()
+            valid_types = {"EQUITY", "ETF", "MUTUALFUND", "CRYPTOCURRENCY", "CURRENCY", "INDEX", "FUTURE", "COMMODITY"}
+
+            for quote in data.get("quotes", []):
                 symbol = quote.get("symbol")
-                name = quote.get("shortname") or quote.get("longname") or symbol
-                exchange = quote.get("exchange") or quote.get("exchDisp") or "Global"
-                if symbol:
+                quote_type = (quote.get("quoteType") or "EQUITY").upper()
+                if symbol and (quote_type in valid_types or len(symbol) <= 12):
+                    name = quote.get("shortname") or quote.get("longname") or symbol
+                    exchange = quote.get("exchange") or quote.get("exchDisp") or "Global"
                     results.append({
                         "symbol": symbol,
                         "name": name,
@@ -324,7 +325,17 @@ def search_ticker(q: str = Query(..., min_length=1, description="Company name or
                 seen.add(item["symbol"])
                 deduped.append(item)
 
-        return {"results": deduped[:12]}
+        # Always offer direct symbol lookup if user typed an exact symbol
+        clean_q = query.upper().strip()
+        if clean_q and clean_q not in seen and len(clean_q) <= 15:
+            deduped.insert(0, {
+                "symbol": clean_q,
+                "name": f"Direct Symbol Lookup: {clean_q}",
+                "exchange": "Market",
+                "type": "DIRECT"
+            })
+
+        return {"results": deduped[:25]}
     except Exception as e:
         return {"results": [], "error": str(e)}
 

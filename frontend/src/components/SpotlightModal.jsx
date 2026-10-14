@@ -95,9 +95,21 @@ export default function SpotlightModal({ isOpen, onClose, onSelectTicker }) {
           <input
             ref={inputRef}
             type="text"
-            placeholder="Search company name, symbol, ETF, or crypto..."
+            placeholder="Type company name (e.g. Tata, Nvidia) or symbol and press Enter..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                if (results && results.length > 0) {
+                  onSelectTicker(results[0].symbol);
+                  onClose();
+                } else if (query.trim()) {
+                  onSelectTicker(query.toUpperCase().trim());
+                  onClose();
+                }
+              }
+            }}
             style={{
               flex: 1,
               background: "transparent",
@@ -128,7 +140,7 @@ export default function SpotlightModal({ isOpen, onClose, onSelectTicker }) {
               <X size={13} />
             </button>
           ) : (
-            <span style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>ESC to exit</span>
+            <span style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>Press Enter ↵ to search</span>
           )}
         </div>
 
@@ -150,8 +162,20 @@ export default function SpotlightModal({ isOpen, onClose, onSelectTicker }) {
               Searching global markets...
             </div>
           ) : results.length === 0 ? (
-            <div style={{ padding: "28px", textAlign: "center", color: "var(--text-secondary)", fontSize: "13px" }}>
-              No verified market symbols found for "{query}".
+            <div style={{ padding: "24px", textAlign: "center" }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: "13px", marginBottom: "12px" }}>
+                No verified matches found for "{query}".
+              </p>
+              <button
+                onClick={() => {
+                  onSelectTicker(query.toUpperCase().trim());
+                  onClose();
+                }}
+                className="apple-button apple-button-primary"
+                style={{ margin: "0 auto", padding: "8px 18px", fontSize: "13px" }}
+              >
+                <span>Analyze "{query.toUpperCase().trim()}" Directly ↵</span>
+              </button>
             </div>
           ) : (
             results.map((item) => (
