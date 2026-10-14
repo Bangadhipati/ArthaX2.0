@@ -5,11 +5,13 @@ import StockChart from "./components/StockChart";
 import RangeAndDepthControls from "./components/RangeAndDepthControls";
 import MetricsGrid from "./components/MetricsGrid";
 import IntelligenceCard from "./components/IntelligenceCard";
+import Sidebar from "./components/Sidebar";
 import { fetchStockData, fetchForecastData, checkBackendHealth } from "./api";
 import { POPULAR_TICKERS } from "./mockData";
 import { Zap, Loader2, Sparkles, TrendingUp, ShieldCheck, LineChart } from "lucide-react";
 
 export default function App() {
+  const [activePage, setActivePage] = useState("market-intelligence");
   const [ticker, setTicker] = useState("AAPL");
   const [activeView, setActiveView] = useState("forecast");
   const [selectedRange, setSelectedRange] = useState("1y");
@@ -102,15 +104,18 @@ export default function App() {
         onSelectTicker={handleSelectTicker}
       />
 
-      {/* Main Content Area */}
-      <main style={{
-        maxWidth: "1180px",
-        width: "100%",
-        margin: "0 auto",
-        padding: "32px 24px 60px",
-        flex: 1
-      }}>
-        {aiStatus === "live" ? (
+      {/* Desktop macOS Sidebar & Responsive Main Content */}
+      <div className="app-layout-wrapper">
+        <Sidebar
+          activePage={activePage}
+          onSelectPage={setActivePage}
+          usdInrRate={stock?.usdInrRate}
+          aiStatus={aiStatus}
+        />
+
+        {/* Main Content Area (Shifted to right on big screens) */}
+        <main className="app-main-content">
+          {aiStatus === "live" ? (
           <>
             {/* Apple Quick Ticker Tape */}
             <div style={{
@@ -294,6 +299,7 @@ export default function App() {
           </div>
         )}
       </main>
+      </div>
 
       {/* Minimalist Apple Footer */}
       <footer style={{

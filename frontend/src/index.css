@@ -272,3 +272,94 @@ input[type="range"].cupertino-slider::-webkit-slider-thumb:hover {
   display: inline-block;
 }
 
+/* macOS Sidebar & Responsive Desktop Layout */
+.app-layout-wrapper {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  position: relative;
+}
+
+.macos-sidebar {
+  width: 250px;
+  flex-shrink: 0;
+  background: rgba(10, 12, 16, 0.75);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px 14px 20px;
+  position: sticky;
+  top: 65px;
+  height: calc(100vh - 65px);
+  overflow-y: auto;
+  z-index: 30;
+}
+
+@media (max-width: 1023px) {
+  .macos-sidebar {
+    display: none;
+  }
+}
+
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  border: 1px solid transparent;
+  user-select: none;
+  position: relative;
+}
+
+.sidebar-nav-item:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-nav-item.active {
+  color: #ffffff !important;
+  background: rgba(10, 132, 255, 0.14) !important;
+  border-color: rgba(10, 132, 255, 0.28) !important;
+  font-weight: 600;
+  box-shadow: 0 2px 10px rgba(10, 132, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.sidebar-badge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+}
+
+.app-main-content {
+  flex: 1;
+  min-width: 0;
+  padding: 28px 32px 60px;
+  max-width: 1340px;
+  margin: 0;
+}
+
+@media (max-width: 1023px) {
+  .app-main-content {
+    padding: 20px 16px 40px;
+    margin: 0 auto;
+    max-width: 100%;
+  }
+}
+
+
