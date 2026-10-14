@@ -1,20 +1,81 @@
-import React from "react";
-import { Search, Sparkles, TrendingUp, Globe, Loader2, Zap } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Search, X, TrendingUp, Globe, Loader2, Zap, Building2 } from "lucide-react";
+import { searchTickers } from "../api";
 
-export default function Navbar({ onOpenSearch, aiStatus = "idle", onConnectAI, usdInrRate }) {
+export default function Navbar({
+  aiStatus = "idle",
+  onConnectAI,
+  usdInrRate,
+  onSelectTicker
+}) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const containerRef = useRef(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Debounced search (case-insensitive)
+  useEffect(() => {
+    if (!query.trim()) {
+      setResults([]);
+      setIsOpen(false);
+      return;
+    }
+
+    setLoading(true);
+    setIsOpen(true);
+    const timeout = setTimeout(async () => {
+      const items = await searchTickers(query);
+      setResults(items);
+      setLoading(false);
+    }, 200);
+
+    return () => clearTimeout(timeout);
+  }, [query]);
+
+  const handleSelect = (symbol) => {
+    onSelectTicker(symbol);
+    setQuery("");
+    setIsOpen(false);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (results && results.length > 0) {
+        handleSelect(results[0].symbol);
+      } else if (query.trim()) {
+        handleSelect(query.toUpperCase().trim());
+      }
+    } else if (e.key === "Escape") {
+      setIsOpen(false);
+    }
+  };
+
   return (
     <header style={{
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
-      padding: "16px 28px",
+      padding: "14px 28px",
       borderBottom: "1px solid var(--border-subtle)",
-      background: "rgba(10, 11, 15, 0.75)",
+      background: "rgba(10, 11, 15, 0.8)",
       backdropFilter: "blur(24px)",
       WebkitBackdropFilter: "blur(24px)",
       position: "sticky",
       top: 0,
-      zIndex: 40
+      zIndex: 50
     }}>
       {/* Brand Identity */}
       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -61,51 +122,174 @@ export default function Navbar({ onOpenSearch, aiStatus = "idle", onConnectAI, u
         </div>
       </div>
 
-      {/* Apple Spotlight Search Trigger */}
-      <button
-        onClick={onOpenSearch}
-        style={{
+      {/* Inline Apple Search Bar with Anchored Dropdown (No full-screen popup) */}
+      <div ref={containerRef} style={{ position: "relative", width: "400px", maxWidth: "45%" }}>
+        <div style={{
           display: "flex",
           alignItems: "center",
           gap: "10px",
           background: "rgba(255, 255, 255, 0.06)",
-          border: "1px solid var(--border-subtle)",
+          border: `1px solid ${isOpen ? "rgba(10, 132, 255, 0.5)" : "var(--border-subtle)"}`,
           borderRadius: "9999px",
-          padding: "8px 18px",
-          color: "var(--text-secondary)",
-          cursor: "pointer",
-          width: "340px",
-          maxWidth: "100%",
-          transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)"
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
-          e.currentTarget.style.borderColor = "var(--border-highlight)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = "rgba(255, 255, 255, 0.06)";
-          e.currentTarget.style.borderColor = "var(--border-subtle)";
-        }}
-      >
-        <Search size={15} style={{ color: "var(--text-secondary)" }} />
-        <span style={{ fontSize: "13px", flex: 1, textAlign: "left" }}>
-          Search company or ticker...
-        </span>
-        <kbd style={{
-          fontSize: "11px",
-          padding: "2px 6px",
-          background: "rgba(255, 255, 255, 0.08)",
-          borderRadius: "6px",
-          border: "1px solid rgba(255, 255, 255, 0.12)",
-          color: "var(--text-secondary)"
+          padding: "8px 16px",
+          transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+          boxShadow: isOpen ? "0 0 0 3px rgba(10, 132, 255, 0.15)" : "none"
         }}>
-          ⌘K
-        </kbd>
-      </button>
+          <Search size={15} style={{ color: isOpen ? "var(--apple-blue)" : "var(--text-secondary)" }} />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => { if (query.trim()) setIsOpen(true); }}
+            onKeyDown={handleKeyDown}
+            placeholder="Search company (e.g. apple, tata, nvda)..."
+            style={{
+              flex: 1,
+              background: "transparent",
+              border: "none",
+              outline: "none",
+              color: "#ffffff",
+              fontSize: "13px",
+              fontFamily: "var(--font-sans)"
+            }}
+          />
+          {query ? (
+            <button
+              onClick={() => { setQuery(""); setIsOpen(false); }}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "var(--text-secondary)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                padding: "2px"
+              }}
+            >
+              <X size={14} />
+            </button>
+          ) : (
+            <kbd style={{
+              fontSize: "10px",
+              padding: "2px 5px",
+              background: "rgba(255, 255, 255, 0.08)",
+              borderRadius: "4px",
+              color: "var(--text-secondary)"
+            }}>
+              ↵
+            </kbd>
+          )}
+        </div>
 
-      {/* Right Intelligence Status & FX Pill */}
+        {/* Anchored Inline Dropdown List */}
+        {isOpen && (
+          <div style={{
+            position: "absolute",
+            top: "calc(100% + 8px)",
+            left: 0,
+            right: 0,
+            background: "rgba(18, 20, 26, 0.96)",
+            backdropFilter: "blur(28px) saturate(190%)",
+            WebkitBackdropFilter: "blur(28px) saturate(190%)",
+            border: "1px solid rgba(255, 255, 255, 0.12)",
+            borderRadius: "16px",
+            boxShadow: "var(--shadow-card)",
+            maxHeight: "340px",
+            overflowY: "auto",
+            padding: "6px",
+            zIndex: 100,
+            animation: "fadeIn 0.15s ease-out"
+          }}>
+            {loading ? (
+              <div style={{ padding: "14px", textAlign: "center", color: "var(--text-secondary)", fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                <Loader2 size={13} className="spin-animation" style={{ color: "var(--apple-blue)" }} />
+                <span>Searching markets for "{query}"...</span>
+              </div>
+            ) : results.length === 0 ? (
+              <div style={{ padding: "14px", textAlign: "center" }}>
+                <p style={{ color: "var(--text-secondary)", fontSize: "12px", margin: "0 0 8px" }}>
+                  No match found for "{query}".
+                </p>
+                <button
+                  onClick={() => handleSelect(query.toUpperCase().trim())}
+                  className="apple-button apple-button-primary"
+                  style={{ padding: "6px 14px", fontSize: "11px", margin: "0 auto" }}
+                >
+                  Analyze "{query.toUpperCase().trim()}" Directly ↵
+                </button>
+              </div>
+            ) : (
+              results.map((item) => (
+                <div
+                  key={item.symbol}
+                  onClick={() => handleSelect(item.symbol)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "8px 12px",
+                    borderRadius: "10px",
+                    cursor: "pointer",
+                    transition: "background 0.15s ease"
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                    <div style={{
+                      width: "28px",
+                      height: "28px",
+                      borderRadius: "7px",
+                      background: "rgba(255, 255, 255, 0.06)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "var(--apple-cyan)",
+                      flexShrink: 0
+                    }}>
+                      <Building2 size={14} />
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span style={{ fontWeight: 600, color: "#ffffff", fontSize: "13px" }}>
+                          {item.symbol}
+                        </span>
+                        <span style={{
+                          fontSize: "10px",
+                          padding: "1px 5px",
+                          borderRadius: "4px",
+                          background: "rgba(255, 255, 255, 0.08)",
+                          color: "var(--text-secondary)"
+                        }}>
+                          {item.exchange || "GLOBAL"}
+                        </span>
+                      </div>
+                      <div style={{
+                        fontSize: "11px",
+                        color: "var(--text-secondary)",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        maxWidth: "240px"
+                      }}>
+                        {item.name}
+                      </div>
+                    </div>
+                  </div>
+
+                  <span style={{ fontSize: "11px", color: "var(--apple-blue)", fontWeight: 500, flexShrink: 0, marginLeft: "8px" }}>
+                    Select ↵
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Right Intelligence Status & Genuine FX Pill */}
       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        {/* Live USD/INR FX Pill */}
+        {/* Genuine USD/INR Live FX Pill (No fake 84.10) */}
         <div style={{
           display: "flex",
           alignItems: "center",
@@ -118,10 +302,16 @@ export default function Navbar({ onOpenSearch, aiStatus = "idle", onConnectAI, u
           color: "var(--text-secondary)"
         }}>
           <Globe size={13} style={{ color: "var(--apple-cyan)" }} />
-          <span>1 USD = <strong style={{ color: "#ffffff" }}>₹{usdInrRate || "84.10"}</strong></span>
+          <span>
+            {usdInrRate ? (
+              <>1 USD = <strong style={{ color: "#ffffff" }}>₹{Number(usdInrRate).toFixed(2)}</strong></>
+            ) : (
+              <span>USD/INR Live FX</span>
+            )}
+          </span>
         </div>
 
-        {/* Dynamic 3-State AI Engine Action Pill */}
+        {/* 3-State AI Connection Trigger */}
         {aiStatus === "live" ? (
           <div style={{
             display: "flex",

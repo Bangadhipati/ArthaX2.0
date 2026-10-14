@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Navbar from "./components/Navbar";
-import SpotlightModal from "./components/SpotlightModal";
 import HeroTicker from "./components/HeroTicker";
 import StockChart from "./components/StockChart";
 import RangeAndDepthControls from "./components/RangeAndDepthControls";
 import MetricsGrid from "./components/MetricsGrid";
 import IntelligenceCard from "./components/IntelligenceCard";
 import { fetchStockData, fetchForecastData, checkBackendHealth } from "./api";
-import { POPULAR_TICKERS, MOCK_STOCKS } from "./mockData";
+import { POPULAR_TICKERS } from "./mockData";
+import { Zap, Loader2, Sparkles, TrendingUp, ShieldCheck, LineChart } from "lucide-react";
 
 export default function App() {
   const [ticker, setTicker] = useState("AAPL");
@@ -15,13 +15,12 @@ export default function App() {
   const [selectedRange, setSelectedRange] = useState("1y");
   const [forecastYears, setForecastYears] = useState(2);
 
-  const [stock, setStock] = useState(MOCK_STOCKS.AAPL);
+  const [stock, setStock] = useState(null);
   const [forecast, setForecast] = useState(null);
   const [aiStatus, setAiStatus] = useState("idle"); // "idle" | "connecting" | "live"
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // 1. Initial health ping (checks if already warm/local)
+  // 1. Initial health ping (checks if backend is already warm or local)
   useEffect(() => {
     checkBackendHealth().then((live) => {
       setAiStatus(live ? "live" : "idle");
@@ -33,7 +32,7 @@ export default function App() {
     setLoading(true);
     try {
       const data = await fetchStockData(sym, rng);
-      setStock(data);
+      if (data) setStock(data);
     } catch (err) {
       console.error("Error loading stock:", err);
     } finally {
@@ -45,19 +44,24 @@ export default function App() {
   const loadForecast = useCallback(async (sym, yrs) => {
     try {
       const data = await fetchForecastData(sym, yrs);
-      setForecast(data);
+      if (data) setForecast(data);
     } catch (err) {
       console.error("Error loading forecast:", err);
     }
   }, []);
 
+  // Fetch only when AI engine is confirmed live
   useEffect(() => {
-    loadStock(ticker, selectedRange);
-  }, [ticker, selectedRange, loadStock]);
+    if (aiStatus === "live") {
+      loadStock(ticker, selectedRange);
+    }
+  }, [aiStatus, ticker, selectedRange, loadStock]);
 
   useEffect(() => {
-    loadForecast(ticker, forecastYears);
-  }, [ticker, forecastYears, loadForecast]);
+    if (aiStatus === "live") {
+      loadForecast(ticker, forecastYears);
+    }
+  }, [aiStatus, ticker, forecastYears, loadForecast]);
 
   // On-demand AI wake up trigger
   const handleConnectAI = useCallback(async () => {
@@ -71,9 +75,6 @@ export default function App() {
       const isLive = await checkBackendHealth();
       if (isLive) {
         setAiStatus("live");
-        // Immediately reload active stock and forecast with live data
-        loadStock(ticker, selectedRange);
-        loadForecast(ticker, forecastYears);
         return;
       }
 
@@ -85,20 +86,20 @@ export default function App() {
     };
 
     poll();
-  }, [aiStatus, ticker, selectedRange, forecastYears, loadStock, loadForecast]);
+  }, [aiStatus]);
 
   const handleSelectTicker = (newTicker) => {
-    setTicker(newTicker);
+    setTicker(newTicker.toUpperCase().trim());
   };
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* Top Navbar */}
+      {/* Top Navbar with Inline Search Dropdown & Genuine FX Status */}
       <Navbar
-        onOpenSearch={() => setIsSearchOpen(true)}
         aiStatus={aiStatus}
         onConnectAI={handleConnectAI}
         usdInrRate={stock?.usdInrRate}
+        onSelectTicker={handleSelectTicker}
       />
 
       {/* Main Content Area */}
@@ -109,95 +110,189 @@ export default function App() {
         padding: "32px 24px 60px",
         flex: 1
       }}>
-        {/* Apple Quick Ticker Tape */}
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          overflowX: "auto",
-          paddingBottom: "16px",
-          marginBottom: "16px",
-          scrollbarWidth: "none"
-        }}>
-          <span style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-tertiary)", letterSpacing: "0.05em", marginRight: "4px" }}>
-            Quick Watch:
-          </span>
-          {POPULAR_TICKERS.map((item) => (
-            <button
-              key={item.symbol}
-              onClick={() => handleSelectTicker(item.symbol)}
-              className={`apple-button ${ticker === item.symbol ? "apple-button-primary" : ""}`}
-              style={{
-                padding: "5px 12px",
-                fontSize: "12px",
-                whiteSpace: "nowrap"
-              }}
-            >
-              <span>{item.symbol}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Hero Header with Big Apple Price & Dual Currency */}
-        <HeroTicker
-          stock={stock}
-          activeView={activeView}
-          onViewChange={setActiveView}
-        />
-
-        {/* Unified Apple Glass Chart Container */}
-        <div className="apple-glass" style={{ overflow: "hidden", position: "relative" }}>
-          {loading && (
+        {aiStatus === "live" ? (
+          <>
+            {/* Apple Quick Ticker Tape */}
             <div style={{
-              position: "absolute",
-              inset: 0,
-              background: "rgba(10, 11, 15, 0.4)",
-              backdropFilter: "blur(4px)",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              overflowX: "auto",
+              paddingBottom: "16px",
+              marginBottom: "16px",
+              scrollbarWidth: "none"
+            }}>
+              <span style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-tertiary)", letterSpacing: "0.05em", marginRight: "4px" }}>
+                Quick Watch:
+              </span>
+              {POPULAR_TICKERS.map((item) => (
+                <button
+                  key={item.symbol}
+                  onClick={() => handleSelectTicker(item.symbol)}
+                  className={`apple-button ${ticker === item.symbol ? "apple-button-primary" : ""}`}
+                  style={{
+                    padding: "5px 12px",
+                    fontSize: "12px",
+                    whiteSpace: "nowrap"
+                  }}
+                >
+                  <span>{item.symbol}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Hero Header with Big Apple Price & Dual Currency */}
+            <HeroTicker
+              stock={stock}
+              activeView={activeView}
+              onViewChange={setActiveView}
+            />
+
+            {/* Unified Apple Glass Chart Container */}
+            <div className="apple-glass" style={{ overflow: "hidden", position: "relative" }}>
+              {loading && (
+                <div style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "rgba(10, 11, 15, 0.4)",
+                  backdropFilter: "blur(4px)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  zIndex: 10,
+                  fontSize: "13px",
+                  color: "var(--text-secondary)"
+                }}>
+                  Streaming real-time market data...
+                </div>
+              )}
+
+              <div style={{ padding: "16px 16px 6px" }}>
+                <StockChart
+                  activeView={activeView}
+                  historyData={stock?.history || []}
+                  forecastData={forecast?.timeline || []}
+                  currency={stock?.currency || "USD"}
+                  stockChange={stock?.change || 0}
+                />
+              </div>
+
+              {/* Cupertino Controls: Timeframe Pills or Prediction Horizon Slider */}
+              <RangeAndDepthControls
+                activeView={activeView}
+                selectedRange={selectedRange}
+                onRangeChange={setSelectedRange}
+                forecastYears={forecastYears}
+                onYearsChange={setForecastYears}
+                loading={loading}
+              />
+            </div>
+
+            {/* Apple 4-Card Frosted Metrics Grid */}
+            <MetricsGrid stock={stock} forecast={forecast} />
+
+            {/* AI Narrative & Market Intelligence Insights */}
+            <IntelligenceCard stock={stock} forecast={forecast} />
+          </>
+        ) : aiStatus === "connecting" ? (
+          /* Connecting State (No Fake Data) */
+          <div className="apple-glass" style={{
+            padding: "80px 24px",
+            textAlign: "center",
+            maxWidth: "680px",
+            margin: "40px auto 0"
+          }}>
+            <Loader2 size={42} className="spin-animation" style={{ color: "var(--apple-gold)", margin: "0 auto 20px" }} />
+            <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#ffffff", letterSpacing: "-0.02em", marginBottom: "8px" }}>
+              Connecting to AI Engine...
+            </h2>
+            <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.6, maxWidth: "480px", margin: "0 auto 24px" }}>
+              Waking up the Python backend server and establishing real-time connections to Yahoo Finance and Meta Prophet.
+            </p>
+            <div style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "6px 14px",
+              borderRadius: "9999px",
+              background: "rgba(255, 214, 10, 0.08)",
+              border: "1px solid rgba(255, 214, 10, 0.2)",
+              fontSize: "12px",
+              color: "var(--apple-gold)"
+            }}>
+              <span>Estimated wake-up time: 20–40s on free tier</span>
+            </div>
+          </div>
+        ) : (
+          /* Idle / Disconnected State (No Fake Data) */
+          <div className="apple-glass" style={{
+            padding: "70px 32px",
+            textAlign: "center",
+            maxWidth: "700px",
+            margin: "40px auto 0"
+          }}>
+            <div style={{
+              width: "56px",
+              height: "56px",
+              borderRadius: "16px",
+              background: "linear-gradient(135deg, #0a84ff 0%, #bf5af2 100%)",
+              color: "#ffffff",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              zIndex: 10,
-              fontSize: "13px",
-              color: "var(--text-secondary)"
+              margin: "0 auto 24px",
+              boxShadow: "0 8px 24px rgba(10, 132, 255, 0.35)"
             }}>
-              Updating market data...
+              <TrendingUp size={28} strokeWidth={2.4} />
             </div>
-          )}
 
-          <div style={{ padding: "16px 16px 6px" }}>
-            <StockChart
-              activeView={activeView}
-              historyData={stock?.history || []}
-              forecastData={forecast?.timeline || stock?.timeline || []}
-              currency={stock?.currency || "USD"}
-              stockChange={stock?.change || 0}
-            />
+            <h2 style={{ fontSize: "28px", fontWeight: 700, color: "#ffffff", letterSpacing: "-0.02em", marginBottom: "10px" }}>
+              AstraGenX Market Intelligence
+            </h2>
+            <p style={{ fontSize: "15px", color: "var(--text-secondary)", lineHeight: 1.6, maxWidth: "520px", margin: "0 auto 28px" }}>
+              Connect to the live AI engine to stream verified candlestick history, live USD/INR exchange rates, and Meta Prophet Bayesian predictive forecasts.
+            </p>
+
+            <button
+              onClick={handleConnectAI}
+              className="apple-button apple-button-primary"
+              style={{
+                padding: "12px 28px",
+                fontSize: "15px",
+                borderRadius: "9999px",
+                margin: "0 auto 36px",
+                gap: "8px"
+              }}
+            >
+              <Zap size={16} style={{ fill: "#ffffff" }} />
+              <span>Connect AI Engine</span>
+            </button>
+
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: "12px",
+              textAlign: "left"
+            }}>
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "14px", padding: "14px" }}>
+                <div style={{ color: "var(--apple-green)", marginBottom: "4px" }}><LineChart size={16} /></div>
+                <div style={{ fontSize: "13px", fontWeight: 600, color: "#ffffff", marginBottom: "2px" }}>Real Market Data</div>
+                <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>Live Yahoo Finance candlestick stream</div>
+              </div>
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "14px", padding: "14px" }}>
+                <div style={{ color: "var(--apple-gold)", marginBottom: "4px" }}><Sparkles size={16} /></div>
+                <div style={{ fontSize: "13px", fontWeight: 600, color: "#ffffff", marginBottom: "2px" }}>Prophet Forecasts</div>
+                <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>1 to 5-year Bayesian trend projections</div>
+              </div>
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "14px", padding: "14px" }}>
+                <div style={{ color: "var(--apple-cyan)", marginBottom: "4px" }}><ShieldCheck size={16} /></div>
+                <div style={{ fontSize: "13px", fontWeight: 600, color: "#ffffff", marginBottom: "2px" }}>Genuine Live FX</div>
+                <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>Live USD to INR parity conversion</div>
+              </div>
+            </div>
           </div>
-
-          {/* Cupertino Controls: Timeframe Pills or Prediction Horizon Slider */}
-          <RangeAndDepthControls
-            activeView={activeView}
-            selectedRange={selectedRange}
-            onRangeChange={setSelectedRange}
-            forecastYears={forecastYears}
-            onYearsChange={setForecastYears}
-            loading={loading}
-          />
-        </div>
-
-        {/* Apple 4-Card Frosted Metrics Grid */}
-        <MetricsGrid stock={stock} forecast={forecast} />
-
-        {/* AI Narrative & Market Intelligence Insights */}
-        <IntelligenceCard stock={stock} forecast={forecast} />
+        )}
       </main>
-
-      {/* Apple macOS Spotlight Modal */}
-      <SpotlightModal
-        isOpen={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
-        onSelectTicker={handleSelectTicker}
-      />
 
       {/* Minimalist Apple Footer */}
       <footer style={{
@@ -213,7 +308,7 @@ export default function App() {
           <span>Powered by Meta Prophet & Yahoo Finance</span>
         </div>
         <p style={{ margin: 0, color: "var(--text-tertiary)" }}>
-          Designed with Apple Cupertino design philosophy. 100% Private, Decoupled Architecture.
+          100% Genuine Live Market Streaming. Decoupled Architecture.
         </p>
       </footer>
     </div>
