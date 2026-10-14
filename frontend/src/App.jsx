@@ -148,23 +148,30 @@ export default function App() {
                 </span>
               </div>
 
-              {/* Dollar INR currency exchange value and beside it Connect AI Live stuff */}
+              {/* Currency exchange value based on asset native (disappears for INR) and beside it Connect AI Live stuff */}
               <div className="market-status-group">
-                {/* Dollar INR currency exchange value */}
-                <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  background: "rgba(255, 255, 255, 0.05)",
-                  border: "1px solid var(--border-subtle)",
-                  padding: "4px 10px",
-                  borderRadius: "9999px",
-                  fontSize: "12px",
-                  color: "var(--text-secondary)"
-                }}>
-                  <Globe size={13} style={{ color: "var(--apple-cyan)" }} />
-                  <span>1 USD = <strong style={{ color: "#ffffff" }}>₹{stock?.usdInrRate ? Number(stock.usdInrRate).toFixed(2) : "95.14"}</strong></span>
-                </div>
+                {/* Dynamic FX exchange value: displays asset native to INR, disappears for Rupees */}
+                {(!stock || stock.currency !== "INR") && (
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    background: "rgba(255, 255, 255, 0.05)",
+                    border: "1px solid var(--border-subtle)",
+                    padding: "4px 10px",
+                    borderRadius: "9999px",
+                    fontSize: "12px",
+                    color: "var(--text-secondary)"
+                  }}>
+                    <Globe size={13} style={{ color: "var(--apple-cyan)" }} />
+                    <span>
+                      1 {stock?.currency || "USD"} ={" "}
+                      <strong style={{ color: "#ffffff" }}>
+                        ₹{Number(stock?.fxRate || stock?.usdInrRate || 84.10).toFixed(2)}
+                      </strong>
+                    </span>
+                  </div>
+                )}
 
                 {/* Connect AI Live status pill */}
                 {aiStatus === "live" ? (
