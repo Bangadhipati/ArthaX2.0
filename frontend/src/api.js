@@ -25,9 +25,10 @@ export async function checkBackendHealth() {
 export async function searchTickers(query) {
   if (!query || query.trim().length === 0) return [];
 
+  // Tier 1: Try Primary Backend API
   try {
     const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(query)}`, {
-      signal: AbortSignal.timeout(3000)
+      signal: AbortSignal.timeout(3500)
     });
     if (res.ok) {
       const data = await res.json();
@@ -36,14 +37,36 @@ export async function searchTickers(query) {
       }
     }
   } catch {
-    // Graceful fallback to mock search
+    // Primary backend offline, proceed to Cloud backup
   }
 
-  // Local fallback filter
-  const q = query.toLowerCase();
-  return POPULAR_TICKERS.filter(
-    (t) => t.symbol.toLowerCase().includes(q) || t.name.toLowerCase().includes(q)
+  // Tier 2: If Localhost is offline, seamlessly query Cloud Render Backend
+  if (API_BASE !== "https://arthax-api.onrender.com") {
+    try {
+      const res = await fetch(`https://arthax-api.onrender.com/api/search?q=${encodeURIComponent(query)}`, {
+        signal: AbortSignal.timeout(4000)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.results && data.results.length > 0) {
+          return data.results;
+        }
+      }
+    } catch {
+      // Cloud backup offline
+    }
+  }
+
+  // Tier 3: Direct query lookup
+  const cleanQ = query.toUpperCase().trim();
+  const localMatches = POPULAR_TICKERS.filter(
+    (t) => t.symbol.toLowerCase().includes(query.toLowerCase()) || t.name.toLowerCase().includes(query.toLowerCase())
   );
+
+  return [
+    { symbol: cleanQ, name: `Direct Symbol Lookup: ${cleanQ}`, exchange: "Market", type: "DIRECT" },
+    ...localMatches
+  ];
 }
 
 export async function fetchStockData(ticker, range = "1y") {
