@@ -1,8 +1,51 @@
 import React from "react";
 import { Sparkles, ShieldAlert, Cpu } from "lucide-react";
 
-export default function IntelligenceCard({ stock, forecast }) {
-  if (!stock) return null;
+export default function IntelligenceCard({ stock, forecast, loading = false }) {
+  if (loading || !stock) {
+    return (
+      <div className="apple-glass intelligence-card-wrapper skeleton-card">
+        {/* Skeleton Header */}
+        <div className="intelligence-header">
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+            <span className="skeleton-shimmer" style={{ width: "32px", height: "32px", borderRadius: "10px", flexShrink: 0 }} />
+            <div>
+              <div style={{ marginBottom: "6px" }}>
+                <span className="skeleton-shimmer" style={{ width: "170px", height: "16px", borderRadius: "4px" }} />
+              </div>
+              <div>
+                <span className="skeleton-shimmer" style={{ width: "240px", height: "12px", borderRadius: "4px" }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Sentiment Badge Skeleton */}
+          <span className="skeleton-shimmer" style={{ width: "110px", height: "26px", borderRadius: "9999px" }} />
+        </div>
+
+        {/* Skeleton Insights Summary */}
+        <div className="intelligence-body">
+          <div style={{ marginBottom: "8px" }}>
+            <span className="skeleton-shimmer" style={{ width: "96%", height: "14px", borderRadius: "4px" }} />
+          </div>
+          <div style={{ marginBottom: "16px" }}>
+            <span className="skeleton-shimmer" style={{ width: "82%", height: "14px", borderRadius: "4px" }} />
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px", paddingLeft: "10px" }}>
+            <span className="skeleton-shimmer" style={{ width: "75%", height: "13px", borderRadius: "4px" }} />
+            <span className="skeleton-shimmer" style={{ width: "88%", height: "13px", borderRadius: "4px" }} />
+            <span className="skeleton-shimmer" style={{ width: "65%", height: "13px", borderRadius: "4px" }} />
+          </div>
+        </div>
+
+        {/* Skeleton Disclaimer */}
+        <div style={{ marginTop: "16px" }}>
+          <span className="skeleton-shimmer" style={{ width: "340px", maxWidth: "90%", height: "12px", borderRadius: "4px" }} />
+        </div>
+      </div>
+    );
+  }
 
   const sentiment = forecast?.sentiment ?? stock.sentiment ?? "Bullish";
   const years = forecast?.years ?? stock.years ?? 2;

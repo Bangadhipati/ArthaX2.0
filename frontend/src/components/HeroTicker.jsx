@@ -4,9 +4,50 @@ import { ArrowUpRight, ArrowDownRight, Sparkles, LineChart } from "lucide-react"
 export default function HeroTicker({
   stock,
   activeView,
-  onViewChange
+  onViewChange,
+  loading = false
 }) {
-  if (!stock) return null;
+  if (loading || !stock) {
+    return (
+      <div className="hero-ticker-container skeleton-card">
+        {/* Skeleton Ticker & Price Hierarchy */}
+        <div style={{ minWidth: 0, flex: 1 }}>
+          {/* Symbol, Name & Exchange skeleton */}
+          <div className="hero-ticker-header" style={{ gap: "10px" }}>
+            <span className="skeleton-shimmer" style={{ width: "95px", height: "30px", borderRadius: "8px" }} />
+            <span className="skeleton-shimmer" style={{ width: "160px", height: "18px", borderRadius: "6px" }} />
+            <span className="skeleton-shimmer" style={{ width: "65px", height: "18px", borderRadius: "9999px" }} />
+          </div>
+
+          {/* Big Price + FX + Change skeleton */}
+          <div className="hero-price-row" style={{ marginTop: "10px", gap: "12px", alignItems: "center" }}>
+            <span className="skeleton-shimmer" style={{ width: "165px", height: "42px", borderRadius: "10px" }} />
+            <span className="skeleton-shimmer" style={{ width: "115px", height: "26px", borderRadius: "9999px" }} />
+            <span className="skeleton-shimmer" style={{ width: "95px", height: "26px", borderRadius: "9999px" }} />
+          </div>
+        </div>
+
+        {/* View Switcher remains accessible */}
+        <div className="segmented-control hero-segmented-switcher">
+          <button
+            className={`segmented-option hero-segmented-btn ${activeView === "historical" ? "active" : ""}`}
+            onClick={() => onViewChange("historical")}
+          >
+            <LineChart size={14} />
+            <span>Historical</span>
+          </button>
+          <button
+            className={`segmented-option hero-segmented-btn ${activeView === "forecast" ? "active" : ""}`}
+            onClick={() => onViewChange("forecast")}
+            style={activeView === "forecast" ? { color: "var(--apple-gold)" } : {}}
+          >
+            <Sparkles size={14} style={{ color: "var(--apple-gold)" }} />
+            <span>AI Projection</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const isPositive = stock.change >= 0;
   const currencySymbol = stock.currency === "INR" ? "₹" : (stock.currency === "USD" ? "$" : `${stock.currency} `);

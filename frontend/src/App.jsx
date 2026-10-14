@@ -7,8 +7,9 @@ import MetricsGrid from "./components/MetricsGrid";
 import IntelligenceCard from "./components/IntelligenceCard";
 import Sidebar from "./components/Sidebar";
 import ComingSoonPage from "./components/ComingSoonPage";
+import SpiderLoadingAnimation from "./components/SpiderLoadingAnimation";
 import { fetchStockData, fetchForecastData, checkBackendHealth } from "./api";
-import { POPULAR_TICKERS } from "./mockData";
+import { POPULAR_TICKERS, MOCK_STOCKS } from "./mockData";
 import { Zap, Loader2, Sparkles, TrendingUp, ShieldCheck, LineChart, Globe } from "lucide-react";
 
 export default function App() {
@@ -20,17 +21,40 @@ export default function App() {
   const [forecastYears, setForecastYears] = useState(2);
   const [forecastHorizon, setForecastHorizon] = useState("2y");
 
-  const [stock, setStock] = useState(null);
+  // Initialize with authentic baseline so Market Intelligence page renders immediately without empty flashes
+  const [stock, setStock] = useState(MOCK_STOCKS.AAPL);
   const [forecast, setForecast] = useState(null);
-  const [aiStatus, setAiStatus] = useState("idle"); // "idle" | "connecting" | "live"
+  const [aiStatus, setAiStatus] = useState("connecting"); // "idle" | "connecting" | "live"
   const [stockLoading, setStockLoading] = useState(false);
   const [forecastLoading, setForecastLoading] = useState(false);
 
-  // 1. Initial health ping (checks if backend is already warm or local)
+  // 1. Continuous auto-poll: as soon as Render turns on the server, live data streams in automatically
   useEffect(() => {
-    checkBackendHealth().then((live) => {
-      setAiStatus(live ? "live" : "idle");
-    });
+    let isMounted = true;
+    let pollTimer = null;
+
+    const check = async () => {
+      try {
+        const live = await checkBackendHealth();
+        if (live && isMounted) {
+          setAiStatus("live");
+          return; // Connected, stop polling
+        }
+      } catch (err) {
+        // Backend waking up
+      }
+
+      if (isMounted) {
+        pollTimer = setTimeout(check, 3500);
+      }
+    };
+
+    check();
+
+    return () => {
+      isMounted = false;
+      if (pollTimer) clearTimeout(pollTimer);
+    };
   }, []);
 
   // 2. Load stock historical data
@@ -72,35 +96,27 @@ export default function App() {
     }
   }, [aiStatus, ticker, forecastYears, forecastHorizon, loadForecast]);
 
-  // On-demand AI wake up trigger
+  // Manual trigger for Connect AI button at the top header or in chart
   const handleConnectAI = useCallback(async () => {
-    if (aiStatus === "connecting" || aiStatus === "live") return;
-
+    if (aiStatus === "live") return;
     setAiStatus("connecting");
-    const startTime = Date.now();
-    const maxWaitTime = 45000; // 45 seconds max wait for Render cold-start
-
-    const poll = async () => {
+    try {
       const isLive = await checkBackendHealth();
       if (isLive) {
         setAiStatus("live");
-        return;
       }
-
-      if (Date.now() - startTime < maxWaitTime) {
-        setTimeout(poll, 3000);
-      } else {
-        setAiStatus("idle");
-      }
-    };
-
-    poll();
+    } catch (err) {
+      console.error("Health check error:", err);
+    }
   }, [aiStatus]);
 
   const handleSelectTicker = (newTicker) => {
     const sym = newTicker.toUpperCase().trim();
     if (sym && sym !== ticker) {
       setTicker(sym);
+      if (MOCK_STOCKS[sym]) {
+        setStock(MOCK_STOCKS[sym]);
+      }
       setStockLoading(true);
       setForecastLoading(true);
     }
@@ -143,310 +159,207 @@ export default function App() {
             />
           ) : (
             <>
-              {aiStatus === "live" ? (
-          <>
-            {/* Top Sub-Header Bar (Attached to right of sidebar, above Quick Watch) */}
-            <div className="market-sub-header">
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  color: "#ffffff",
-                  letterSpacing: "-0.01em"
-                }}>
-                  Market Intelligence
-                </span>
-                <span style={{
-                  fontSize: "10px",
-                  fontWeight: 600,
-                  padding: "1px 6px",
-                  borderRadius: "9999px",
-                  background: "rgba(10, 132, 255, 0.12)",
-                  color: "var(--apple-blue)"
-                }}>
-                  Live Terminal
-                </span>
+              {/* Top Sub-Header Bar (Attached to right of sidebar, above Quick Watch) */}
+              <div className="market-sub-header">
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    color: "#ffffff",
+                    letterSpacing: "-0.01em"
+                  }}>
+                    Market Intelligence
+                  </span>
+                  <span style={{
+                    fontSize: "10px",
+                    fontWeight: 600,
+                    padding: "1px 6px",
+                    borderRadius: "9999px",
+                    background: "rgba(10, 132, 255, 0.12)",
+                    color: "var(--apple-blue)"
+                  }}>
+                    Live Terminal
+                  </span>
+                </div>
+
+                {/* Currency exchange value based on asset native (disappears for INR) and beside it Connect AI Live stuff */}
+                <div className="market-status-group">
+                  {/* Dynamic FX exchange value: displays asset native to INR, disappears for Rupees */}
+                  {(!stock || stock.currency !== "INR") && (
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      background: "rgba(255, 255, 255, 0.05)",
+                      border: "1px solid var(--border-subtle)",
+                      padding: "4px 10px",
+                      borderRadius: "9999px",
+                      fontSize: "12px",
+                      color: "var(--text-secondary)"
+                    }}>
+                      <Globe size={13} style={{ color: "var(--apple-cyan)" }} />
+                      <span>
+                        1 {stock?.currency || "USD"} ={" "}
+                        <strong style={{ color: "#ffffff" }}>
+                          ₹{Number(stock?.fxRate || stock?.usdInrRate || 84.10).toFixed(2)}
+                        </strong>
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Connect AI Live status pill / button */}
+                  {aiStatus === "live" ? (
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "7px",
+                      background: "rgba(48, 209, 88, 0.12)",
+                      border: "1px solid rgba(48, 209, 88, 0.3)",
+                      padding: "4px 10px",
+                      borderRadius: "9999px",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: "var(--apple-green)"
+                    }}>
+                      <div
+                        className="breathing-dot"
+                        style={{
+                          width: "7px",
+                          height: "7px",
+                          borderRadius: "50%",
+                          background: "var(--apple-green)",
+                          boxShadow: "0 0 8px var(--apple-green)"
+                        }}
+                      />
+                      <span>AI is LIVE</span>
+                    </div>
+                  ) : aiStatus === "connecting" ? (
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      background: "rgba(255, 214, 10, 0.12)",
+                      border: "1px solid rgba(255, 214, 10, 0.3)",
+                      padding: "4px 10px",
+                      borderRadius: "9999px",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: "var(--apple-gold)"
+                    }}>
+                      <Loader2 size={13} className="spin-animation" style={{ color: "var(--apple-gold)" }} />
+                      <span>Connecting...</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleConnectAI}
+                      className="apple-button apple-button-primary"
+                      style={{
+                        padding: "4px 12px",
+                        fontSize: "12px",
+                        fontWeight: 600
+                      }}
+                    >
+                      <Zap size={13} />
+                      <span>Connect AI</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
-              {/* Currency exchange value based on asset native (disappears for INR) and beside it Connect AI Live stuff */}
-              <div className="market-status-group">
-                {/* Dynamic FX exchange value: displays asset native to INR, disappears for Rupees */}
-                {(!stock || stock.currency !== "INR") && (
-                  <div style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    background: "rgba(255, 255, 255, 0.05)",
-                    border: "1px solid var(--border-subtle)",
-                    padding: "4px 10px",
-                    borderRadius: "9999px",
-                    fontSize: "12px",
-                    color: "var(--text-secondary)"
-                  }}>
-                    <Globe size={13} style={{ color: "var(--apple-cyan)" }} />
-                    <span>
-                      1 {stock?.currency || "USD"} ={" "}
-                      <strong style={{ color: "#ffffff" }}>
-                        ₹{Number(stock?.fxRate || stock?.usdInrRate || 84.10).toFixed(2)}
-                      </strong>
-                    </span>
-                  </div>
-                )}
-
-                {/* Connect AI Live status pill */}
-                {aiStatus === "live" ? (
-                  <div style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "7px",
-                    background: "rgba(48, 209, 88, 0.12)",
-                    border: "1px solid rgba(48, 209, 88, 0.3)",
-                    padding: "4px 10px",
-                    borderRadius: "9999px",
-                    fontSize: "12px",
-                    fontWeight: 600,
-                    color: "var(--apple-green)"
-                  }}>
-                    <div
-                      className="breathing-dot"
-                      style={{
-                        width: "7px",
-                        height: "7px",
-                        borderRadius: "50%",
-                        background: "var(--apple-green)",
-                        boxShadow: "0 0 8px var(--apple-green)"
-                      }}
-                    />
-                    <span>AI is LIVE</span>
-                  </div>
-                ) : aiStatus === "connecting" ? (
-                  <div style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    background: "rgba(255, 214, 10, 0.12)",
-                    border: "1px solid rgba(255, 214, 10, 0.3)",
-                    padding: "4px 10px",
-                    borderRadius: "9999px",
-                    fontSize: "12px",
-                    fontWeight: 600,
-                    color: "var(--apple-gold)"
-                  }}>
-                    <Loader2 size={13} className="spin-animation" style={{ color: "var(--apple-gold)" }} />
-                    <span>Connecting...</span>
-                  </div>
-                ) : (
+              {/* Apple Quick Ticker Tape */}
+              <div className="quick-watch-tape">
+                <span style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-tertiary)", letterSpacing: "0.05em", marginRight: "4px", flexShrink: 0 }}>
+                  Quick Watch:
+                </span>
+                {POPULAR_TICKERS.map((item) => (
                   <button
-                    onClick={handleConnectAI}
-                    className="apple-button apple-button-primary"
+                    key={item.symbol}
+                    onClick={() => handleSelectTicker(item.symbol)}
+                    className={`apple-button ${ticker === item.symbol ? "apple-button-primary" : ""}`}
                     style={{
-                      padding: "4px 12px",
-                      fontSize: "12px",
-                      fontWeight: 600
+                      padding: "4px 10px",
+                      fontSize: "11.5px",
+                      whiteSpace: "nowrap",
+                      flexShrink: 0
                     }}
                   >
-                    <Zap size={13} />
-                    <span>Connect AI</span>
+                    <span>{item.symbol}</span>
                   </button>
-                )}
+                ))}
               </div>
-            </div>
 
-            {/* Apple Quick Ticker Tape */}
-            <div className="quick-watch-tape">
-              <span style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-tertiary)", letterSpacing: "0.05em", marginRight: "4px", flexShrink: 0 }}>
-                Quick Watch:
-              </span>
-              {POPULAR_TICKERS.map((item) => (
-                <button
-                  key={item.symbol}
-                  onClick={() => handleSelectTicker(item.symbol)}
-                  className={`apple-button ${ticker === item.symbol ? "apple-button-primary" : ""}`}
-                  style={{
-                    padding: "4px 10px",
-                    fontSize: "11.5px",
-                    whiteSpace: "nowrap",
-                    flexShrink: 0
-                  }}
-                >
-                  <span>{item.symbol}</span>
-                </button>
-              ))}
-            </div>
+              {/* Hero Header with Big Apple Price & Dual Currency */}
+              <HeroTicker
+                stock={stock}
+                activeView={activeView}
+                onViewChange={setActiveView}
+                loading={aiStatus !== "live" || isHistoricalLoading}
+              />
 
-            {/* Hero Header with Big Apple Price & Dual Currency */}
-            <HeroTicker
-              stock={stock}
-              activeView={activeView}
-              onViewChange={setActiveView}
-            />
-
-            {/* Unified Apple Glass Chart Container */}
-            <div className="apple-glass" style={{ overflow: "hidden", position: "relative" }}>
-              {isGraphLoading && (
-                <div className="chart-loading-overlay">
-                  <div className="chart-loading-content">
-                    <div className="chart-loading-spinner-wrapper">
-                      <div className="chart-loading-pulse-ring" />
-                      <Loader2 size={32} className="spin-animation chart-loading-icon" />
-                    </div>
-                    <div className="chart-loading-meta">
-                      <div className="chart-loading-title">
-                        {activeView === "historical"
-                          ? `Syncing ${ticker} Market History...`
-                          : `Generating AI Trajectory for ${ticker}...`}
+              {/* Unified Apple Glass Chart Container with Spider Radar Loading */}
+              <div className="apple-glass" style={{ overflow: "hidden", position: "relative" }}>
+                {aiStatus !== "live" ? (
+                  <SpiderLoadingAnimation
+                    status={aiStatus}
+                    onConnect={handleConnectAI}
+                  />
+                ) : (
+                  <>
+                    {isGraphLoading && (
+                      <div className="chart-loading-overlay">
+                        <SpiderLoadingAnimation status="connecting" />
                       </div>
-                      <div className="chart-loading-subtitle">
-                        {activeView === "historical"
-                          ? "Streaming real-time order ticks, FX conversion & OHLC candles"
-                          : "Synthesizing historical seasonality & calibrating 95% confidence corridor"}
-                      </div>
-                    </div>
-                    <div className="chart-loading-bar-track">
-                      <div className="chart-loading-bar-fill" />
-                    </div>
-                  </div>
-                </div>
-              )}
+                    )}
 
-              <div className="stock-chart-wrapper">
-                <StockChart
+                    <div className="stock-chart-wrapper">
+                      <StockChart
+                        activeView={activeView}
+                        historyData={activeHistoryData}
+                        forecastData={activeForecastData}
+                        projectedCandles={forecast?.projectedCandles || []}
+                        currency={stock?.symbol === ticker ? (stock?.currency || "USD") : "USD"}
+                        stockChange={stock?.symbol === ticker ? (stock?.change || 0) : 0}
+                        fxRate={stock?.symbol === ticker ? (stock?.fxRate || stock?.usdInrRate || 84.10) : 84.10}
+                        usdInrRate={stock?.symbol === ticker ? (stock?.usdInrRate || 84.10) : 84.10}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Cupertino Controls: Timeframe Pills or Prediction Horizon Slider */}
+                <RangeAndDepthControls
                   activeView={activeView}
-                  historyData={activeHistoryData}
-                  forecastData={activeForecastData}
-                  projectedCandles={forecast?.projectedCandles || []}
-                  currency={stock?.symbol === ticker ? (stock?.currency || "USD") : "USD"}
-                  stockChange={stock?.symbol === ticker ? (stock?.change || 0) : 0}
-                  fxRate={stock?.symbol === ticker ? (stock?.fxRate || stock?.usdInrRate || 84.10) : 84.10}
-                  usdInrRate={stock?.symbol === ticker ? (stock?.usdInrRate || 84.10) : 84.10}
+                  selectedRange={selectedRange}
+                  onRangeChange={setSelectedRange}
+                  forecastYears={forecastYears}
+                  onYearsChange={(y) => {
+                    setForecastYears(y);
+                    setForecastHorizon(`${y}y`);
+                  }}
+                  forecastHorizon={forecastHorizon}
+                  onHorizonChange={(hrz) => {
+                    setForecastHorizon(hrz);
+                    if (hrz.endsWith("y") && hrz.slice(0, -1)) {
+                      setForecastYears(parseInt(hrz.slice(0, -1), 10));
+                    }
+                  }}
+                  loading={isGraphLoading}
                 />
               </div>
 
-              {/* Cupertino Controls: Timeframe Pills or Prediction Horizon Slider */}
-              <RangeAndDepthControls
-                activeView={activeView}
-                selectedRange={selectedRange}
-                onRangeChange={setSelectedRange}
-                forecastYears={forecastYears}
-                onYearsChange={(y) => {
-                  setForecastYears(y);
-                  setForecastHorizon(`${y}y`);
-                }}
-                forecastHorizon={forecastHorizon}
-                onHorizonChange={(hrz) => {
-                  setForecastHorizon(hrz);
-                  if (hrz.endsWith("y") && hrz.slice(0, -1)) {
-                    setForecastYears(parseInt(hrz.slice(0, -1), 10));
-                  }
-                }}
-                loading={isGraphLoading}
+              {/* Apple 4-Card Frosted Metrics Grid */}
+              <MetricsGrid
+                stock={stock}
+                forecast={forecast}
+                loading={aiStatus !== "live" || isGraphLoading}
               />
-            </div>
 
-            {/* Apple 4-Card Frosted Metrics Grid */}
-            <MetricsGrid stock={stock} forecast={forecast} />
-
-            {/* AI Narrative & Market Intelligence Insights */}
-            <IntelligenceCard stock={stock} forecast={forecast} />
-          </>
-        ) : aiStatus === "connecting" ? (
-          /* Connecting State (No Fake Data) */
-          <div className="apple-glass" style={{
-            padding: "80px 24px",
-            textAlign: "center",
-            maxWidth: "680px",
-            margin: "40px auto 0"
-          }}>
-            <Loader2 size={42} className="spin-animation" style={{ color: "var(--apple-gold)", margin: "0 auto 20px" }} />
-            <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#ffffff", letterSpacing: "-0.02em", marginBottom: "8px" }}>
-              Connecting to AI Engine...
-            </h2>
-            <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.6, maxWidth: "480px", margin: "0 auto 24px" }}>
-              Waking up the Python backend server and establishing real-time connections to Global Market Feeds and the Predictive AI Engine.
-            </p>
-            <div style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "6px 14px",
-              borderRadius: "9999px",
-              background: "rgba(255, 214, 10, 0.08)",
-              border: "1px solid rgba(255, 214, 10, 0.2)",
-              fontSize: "12px",
-              color: "var(--apple-gold)"
-            }}>
-              <span>Estimated wake-up time: 20–40s on free tier</span>
-            </div>
-          </div>
-        ) : (
-          /* Idle / Disconnected State (No Fake Data) */
-          <div className="apple-glass" style={{
-            padding: "70px 32px",
-            textAlign: "center",
-            maxWidth: "700px",
-            margin: "40px auto 0"
-          }}>
-            <div style={{
-              width: "56px",
-              height: "56px",
-              borderRadius: "16px",
-              background: "linear-gradient(135deg, #0a84ff 0%, #bf5af2 100%)",
-              color: "#ffffff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              margin: "0 auto 24px",
-              boxShadow: "0 8px 24px rgba(10, 132, 255, 0.35)"
-            }}>
-              <TrendingUp size={28} strokeWidth={2.4} />
-            </div>
-
-            <h2 style={{ fontSize: "28px", fontWeight: 700, color: "#ffffff", letterSpacing: "-0.02em", marginBottom: "10px" }}>
-              AstraGenX Market Intelligence
-            </h2>
-            <p style={{ fontSize: "15px", color: "var(--text-secondary)", lineHeight: 1.6, maxWidth: "520px", margin: "0 auto 28px" }}>
-              Connect to the live AI engine to stream verified candlestick history, live USD/INR exchange rates, and Advanced Bayesian AI predictive forecasts.
-            </p>
-
-            <button
-              onClick={handleConnectAI}
-              className="apple-button apple-button-primary"
-              style={{
-                padding: "12px 28px",
-                fontSize: "15px",
-                borderRadius: "9999px",
-                margin: "0 auto 36px",
-                gap: "8px"
-              }}
-            >
-              <Zap size={16} style={{ fill: "#ffffff" }} />
-              <span>Connect AI Engine</span>
-            </button>
-
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-              gap: "12px",
-              textAlign: "left"
-            }}>
-              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "14px", padding: "14px" }}>
-                <div style={{ color: "var(--apple-green)", marginBottom: "4px" }}><LineChart size={16} /></div>
-                <div style={{ fontSize: "13px", fontWeight: 600, color: "#ffffff", marginBottom: "2px" }}>Real Market Data</div>
-                <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>Live Institutional candlestick stream</div>
-              </div>
-              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "14px", padding: "14px" }}>
-                <div style={{ color: "var(--apple-gold)", marginBottom: "4px" }}><Sparkles size={16} /></div>
-                <div style={{ fontSize: "13px", fontWeight: 600, color: "#ffffff", marginBottom: "2px" }}>AI Forecasts</div>
-                <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>1 to 5-year Bayesian trend projections</div>
-              </div>
-              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "14px", padding: "14px" }}>
-                <div style={{ color: "var(--apple-cyan)", marginBottom: "4px" }}><ShieldCheck size={16} /></div>
-                <div style={{ fontSize: "13px", fontWeight: 600, color: "#ffffff", marginBottom: "2px" }}>Genuine Live FX</div>
-                <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>Live USD to INR parity conversion</div>
-              </div>
-            </div>
-          </div>
-        )}
+              {/* AI Narrative & Market Intelligence Insights */}
+              <IntelligenceCard
+                stock={stock}
+                forecast={forecast}
+                loading={aiStatus !== "live" || isForecastLoading}
+              />
             </>
           )}
       </main>

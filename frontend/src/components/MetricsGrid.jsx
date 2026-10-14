@@ -1,8 +1,83 @@
 import React from "react";
 import { Target, TrendingUp, BarChart3, Coins, Layers } from "lucide-react";
 
-export default function MetricsGrid({ stock, forecast }) {
-  if (!stock) return null;
+export default function MetricsGrid({ stock, forecast, loading = false }) {
+  if (loading || !stock) {
+    return (
+      <div className="metrics-grid skeleton-card">
+        {/* Skeleton Card 1: AI Price Target */}
+        <div className="apple-glass metric-card">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+            <span className="skeleton-shimmer" style={{ width: "85px", height: "13px", borderRadius: "4px" }} />
+            <span className="skeleton-shimmer" style={{ width: "28px", height: "28px", borderRadius: "8px" }} />
+          </div>
+          <div style={{ margin: "8px 0" }}>
+            <span className="skeleton-shimmer" style={{ width: "135px", height: "32px", borderRadius: "8px" }} />
+          </div>
+          <div style={{ marginTop: "4px" }}>
+            <span className="skeleton-shimmer" style={{ width: "95px", height: "14px", borderRadius: "4px" }} />
+          </div>
+          <div style={{ display: "flex", gap: "8px", marginTop: "14px" }}>
+            <span className="skeleton-shimmer" style={{ width: "70px", height: "20px", borderRadius: "6px" }} />
+            <span className="skeleton-shimmer" style={{ width: "70px", height: "20px", borderRadius: "6px" }} />
+          </div>
+        </div>
+
+        {/* Skeleton Card 2: 52-Week Range */}
+        <div className="apple-glass metric-card">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+            <span className="skeleton-shimmer" style={{ width: "115px", height: "13px", borderRadius: "4px" }} />
+            <span className="skeleton-shimmer" style={{ width: "28px", height: "28px", borderRadius: "8px" }} />
+          </div>
+          <div style={{ marginTop: "18px", marginBottom: "16px" }}>
+            <span className="skeleton-shimmer" style={{ width: "100%", height: "8px", borderRadius: "9999px" }} />
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span className="skeleton-shimmer" style={{ width: "60px", height: "14px", borderRadius: "4px" }} />
+            <span className="skeleton-shimmer" style={{ width: "70px", height: "14px", borderRadius: "4px" }} />
+            <span className="skeleton-shimmer" style={{ width: "60px", height: "14px", borderRadius: "4px" }} />
+          </div>
+        </div>
+
+        {/* Skeleton Card 3: Valuation & Fundamentals */}
+        <div className="apple-glass metric-card">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+            <span className="skeleton-shimmer" style={{ width: "125px", height: "13px", borderRadius: "4px" }} />
+            <span className="skeleton-shimmer" style={{ width: "28px", height: "28px", borderRadius: "8px" }} />
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
+            <span className="skeleton-shimmer" style={{ width: "70px", height: "14px", borderRadius: "4px" }} />
+            <span className="skeleton-shimmer" style={{ width: "55px", height: "14px", borderRadius: "4px" }} />
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
+            <span className="skeleton-shimmer" style={{ width: "75px", height: "14px", borderRadius: "4px" }} />
+            <span className="skeleton-shimmer" style={{ width: "55px", height: "14px", borderRadius: "4px" }} />
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0" }}>
+            <span className="skeleton-shimmer" style={{ width: "65px", height: "14px", borderRadius: "4px" }} />
+            <span className="skeleton-shimmer" style={{ width: "45px", height: "14px", borderRadius: "4px" }} />
+          </div>
+        </div>
+
+        {/* Skeleton Card 4: Currency & Real-time FX */}
+        <div className="apple-glass metric-card">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+            <span className="skeleton-shimmer" style={{ width: "135px", height: "13px", borderRadius: "4px" }} />
+            <span className="skeleton-shimmer" style={{ width: "28px", height: "28px", borderRadius: "8px" }} />
+          </div>
+          <div style={{ marginBottom: "8px" }}>
+            <span className="skeleton-shimmer" style={{ width: "120px", height: "16px", borderRadius: "4px" }} />
+          </div>
+          <div style={{ marginBottom: "12px" }}>
+            <span className="skeleton-shimmer" style={{ width: "90%", height: "12px", borderRadius: "4px" }} />
+          </div>
+          <div>
+            <span className="skeleton-shimmer" style={{ width: "100%", height: "30px", borderRadius: "8px" }} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const currencySymbol = stock.currency === "INR" ? "₹" : (stock.currency === "USD" ? "$" : `${stock.currency} `);
 
