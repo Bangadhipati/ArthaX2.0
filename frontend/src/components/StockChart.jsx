@@ -218,6 +218,18 @@ export default function StockChart({
     return currentAndFutureForecast.slice(startIndex, startIndex + sliceCount);
   }, [currentAndFutureForecast, zoomIndex, sliceCount, panIndex]);
 
+  // Format forecast points with floating confidenceRange [lower, upper] for proper corridor rendering
+  const formattedForecastData = useMemo(() => {
+    return visibleForecastData.map((d) => {
+      const low = d.lower != null ? d.lower : (d.predicted ?? d.actual);
+      const high = d.upper != null ? d.upper : (d.predicted ?? d.actual);
+      return {
+        ...d,
+        confidenceRange: [low, high]
+      };
+    });
+  }, [visibleForecastData]);
+
   // Dynamic bounds for high-res zoom
   let minY = Infinity;
   let maxY = -Infinity;
@@ -244,8 +256,9 @@ export default function StockChart({
     maxY = 200;
   }
 
-  const padding = (maxY - minY) * 0.08 || 5;
-  const domain = [Math.floor(minY - padding), Math.ceil(maxY + padding)];
+  // 15% headroom and footroom padding so confidence corridor never touches absolute top
+  const padding = (maxY - minY) * 0.15 || 10;
+  const domain = [Math.max(0, Math.floor(minY - padding)), Math.ceil(maxY + padding)];
 
   const isInteractiveNav = zoomIndex > 0 || isPanMode;
 
@@ -415,12 +428,12 @@ export default function StockChart({
               />
             </AreaChart>
           ) : (
-            <AreaChart data={visibleForecastData} margin={{ top: 22, right: 4, left: -8, bottom: 0 }}>
+            <AreaChart data={formattedForecastData} margin={{ top: 22, right: 4, left: -8, bottom: 0 }}>
               <defs>
                 {/* Golden Prophet Confidence Corridor */}
                 <linearGradient id="confidenceGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#ffd60a" stopOpacity={0.16} />
-                  <stop offset="100%" stopColor="#ffd60a" stopOpacity={0.02} />
+                  <stop offset="0%" stopColor="#ffd60a" stopOpacity={0.22} />
+                  <stop offset="100%" stopColor="#ffd60a" stopOpacity={0.05} />
                 </linearGradient>
               </defs>
               <XAxis
@@ -449,12 +462,33 @@ export default function StockChart({
                 content={<CustomForecastTooltip currSymbol={currSymbol} currency={currency} conversionRate={conversionRate} />}
                 cursor={{ stroke: "rgba(255,214,10,0.3)", strokeDasharray: "3 3" }}
               />
-              {/* Confidence Band */}
+              {/* True Floating Confidence Corridor between lower and upper */}
               <Area
                 type="monotone"
-                dataKey="upper"
+                dataKey="confidenceRange"
                 stroke="transparent"
                 fill="url(#confidenceGradient)"
+                isAnimationActive={false}
+              />
+              {/* Upper 95% boundary line */}
+              <Line
+                type="monotone"
+                dataKey="upper"
+                stroke="rgba(255, 214, 10, 0.45)"
+                strokeWidth={1}
+                strokeDasharray="3 3"
+                dot={false}
+                isAnimationActive={false}
+              />
+              {/* Lower 95% boundary line */}
+              <Line
+                type="monotone"
+                dataKey="lower"
+                stroke="rgba(255, 214, 10, 0.45)"
+                strokeWidth={1}
+                strokeDasharray="3 3"
+                dot={false}
+                isAnimationActive={false}
               />
               {/* Current Price origin anchor dot */}
               <Line
@@ -465,7 +499,7 @@ export default function StockChart({
                 dot={{ r: 4.5, fill: "#38bdf8", stroke: "#ffffff", strokeWidth: 1.5 }}
                 isAnimationActive={false}
               />
-              {/* Future Prophet predicted line */}
+              {/* Future Prophet predicted central trajectory line */}
               <Line
                 type="monotone"
                 dataKey="predicted"
@@ -491,8 +525,8 @@ export default function StockChart({
             <span style={{ color: "#ffd60a", fontWeight: 500 }}>AI Trajectory</span>
           </div>
           <div className="hide-on-mobile" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ width: "8px", height: "8px", background: "rgba(255, 214, 10, 0.25)", borderRadius: "2px" }} />
-            <span style={{ color: "var(--text-secondary)" }}>95% Confidence Interval</span>
+            <span style={{ width: "10px", height: "6px", background: "rgba(255, 214, 10, 0.22)", border: "1px dashed rgba(255, 214, 10, 0.5)", borderRadius: "2px" }} />
+            <span style={{ color: "var(--text-secondary)" }}>95% Confidence Corridor</span>
           </div>
         </div>
       )}

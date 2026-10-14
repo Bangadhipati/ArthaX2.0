@@ -512,7 +512,8 @@ def generate_forecast(req: ForecastRequest):
         # Prepare for Prophet
         df_train = df[["Date", "Close"]].rename(columns={"Date": "ds", "Close": "y"})
 
-        m = Prophet(daily_seasonality=False, yearly_seasonality=True, weekly_seasonality=False)
+        # Explicit 95% Bayesian posterior confidence interval
+        m = Prophet(interval_width=0.95, daily_seasonality=False, yearly_seasonality=True, weekly_seasonality=False)
         m.fit(df_train)
 
         period = years * 365
