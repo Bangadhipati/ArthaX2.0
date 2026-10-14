@@ -1,33 +1,62 @@
 import { MOCK_STOCKS, POPULAR_TICKERS, generateForecastTimeline } from "./mockData";
 
-const getApiBase = () => {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL.replace(/\/+$/, "");
-  }
-  // If running in production (e.g. Vercel), default automatically to Render backend
+let currentApiBase = null;
+
+export function getActiveApiBase() {
+  if (currentApiBase) return currentApiBase;
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL.replace(/\/+$/, "");
   if (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
     return "https://arthax-api.onrender.com";
   }
   return "http://localhost:8000";
-};
-
-const API_BASE = getApiBase();
+}
 
 export async function checkBackendHealth() {
-  try {
-    const res = await fetch(`${API_BASE}/api/health`, { method: "GET", signal: AbortSignal.timeout(6000) });
-    return res.ok;
-  } catch {
-    return false;
+  const localUrl = "http://localhost:8000";
+  const cloudUrl = "https://arthax-api.onrender.com";
+
+  // 1. If explicit env variable is set, try it
+  if (import.meta.env.VITE_API_URL) {
+    const configured = import.meta.env.VITE_API_URL.replace(/\/+$/, "");
+    try {
+      const res = await fetch(`${configured}/api/health`, { signal: AbortSignal.timeout(3000) });
+      if (res.ok) {
+        currentApiBase = configured;
+        return true;
+      }
+    } catch {}
   }
+
+  // 2. On localhost, first test if python main.py is running
+  if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
+    try {
+      const res = await fetch(`${localUrl}/api/health`, { signal: AbortSignal.timeout(1500) });
+      if (res.ok) {
+        currentApiBase = localUrl;
+        return true;
+      }
+    } catch {}
+  }
+
+  // 3. Fallback to Cloud Render backend!
+  try {
+    const res = await fetch(`${cloudUrl}/api/health`, { signal: AbortSignal.timeout(5000) });
+    if (res.ok) {
+      currentApiBase = cloudUrl;
+      return true;
+    }
+  } catch {}
+
+  return false;
 }
 
 export async function searchTickers(query) {
   if (!query || query.trim().length === 0) return [];
+  const endpoint = getActiveApiBase();
 
-  // Tier 1: Try Primary Backend API
+  // Tier 1: Try Primary Active Backend API
   try {
-    const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(query)}`, {
+    const res = await fetch(`${endpoint}/api/search?q=${encodeURIComponent(query)}`, {
       signal: AbortSignal.timeout(3500)
     });
     if (res.ok) {
@@ -41,7 +70,7 @@ export async function searchTickers(query) {
   }
 
   // Tier 2: If Localhost is offline, seamlessly query Cloud Render Backend
-  if (API_BASE !== "https://arthax-api.onrender.com") {
+  if (endpoint !== "https://arthax-api.onrender.com") {
     try {
       const res = await fetch(`https://arthax-api.onrender.com/api/search?q=${encodeURIComponent(query)}`, {
         signal: AbortSignal.timeout(4000)
@@ -71,10 +100,11 @@ export async function searchTickers(query) {
 
 export async function fetchStockData(ticker, range = "1y") {
   const cleanTicker = ticker.toUpperCase().trim();
+  const endpoint = getActiveApiBase();
 
   try {
-    const res = await fetch(`${API_BASE}/api/stock/${cleanTicker}?range=${range}`, {
-      signal: AbortSignal.timeout(4500)
+    const res = await fetch(`${endpoint}/api/stock/${cleanTicker}?range=${range}`, {
+      signal: AbortSignal.timeout(6000)
     });
     if (res.ok) {
       const liveData = await res.json();
@@ -119,9 +149,10 @@ export async function fetchStockData(ticker, range = "1y") {
 
 export async function fetchForecastData(ticker, years = 2) {
   const cleanTicker = ticker.toUpperCase().trim();
+  const endpoint = getActiveApiBase();
 
   try {
-    const res = await fetch(`${API_BASE}/api/forecast`, {
+    const res = await fetch(`${endpoint}/api/forecast`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ticker: cleanTicker, years }),
