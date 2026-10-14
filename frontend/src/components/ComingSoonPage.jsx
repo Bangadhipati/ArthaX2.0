@@ -5,86 +5,49 @@ import {
   Sparkles,
   LineChart,
   Clock,
-  ArrowLeft,
-  ShieldCheck,
-  Cpu
+  ArrowLeft
 } from "lucide-react";
 
 const MODULE_META = {
   "forecast-hub": {
     title: "AI Forecasting Hub",
-    badge: "Advanced Modeling",
     icon: LineChart,
-    color: "#ffd60a",
-    description: "Dedicated multi-ticker comparative trajectories, custom Bayesian changepoint sensitivity tuning, and automated scenario backtesting across global markets.",
-    features: [
-      "Simultaneous multi-asset comparative trajectory forecasting",
-      "Interactive Bayesian changepoint prior scale calibration",
-      "Historical backtesting with Mean Absolute Percentage Error (MAPE)"
-    ]
+    color: "#ffd60a"
   },
   "watchlist": {
     title: "Portfolio & Watchlist",
-    badge: "Asset Tracking",
     icon: Bookmark,
-    color: "#0a84ff",
-    description: "Real-time portfolio performance tracking, personalized risk-adjusted return ratios, automated price alerts, and multi-exchange watchlist synchronization.",
-    features: [
-      "Unified global portfolio valuation with live INR/USD auto-conversion",
-      "Custom price alerts with email and web push notifications",
-      "Dynamic portfolio diversification and Sharpe ratio metrics"
-    ]
+    color: "#0a84ff"
   },
   "forex-matrix": {
     title: "Currency & FX Matrix",
-    badge: "Global FX Engine",
     icon: Coins,
-    color: "#30d158",
-    description: "Institutional cross-currency correlation matrix, purchasing power parity analytics, and live spot rate streaming across 40+ global currencies.",
-    features: [
-      "Real-time cross-currency heatmaps (USD, INR, EUR, GBP, JPY)",
-      "Central bank policy rate differentials and interest rate parity",
-      "Historical forex volatility cones and FX trend forecasting"
-    ]
+    color: "#30d158"
   },
   "macro-sentiment": {
     title: "Macro AI Sentiment",
-    badge: "Natural Language AI",
     icon: Sparkles,
-    color: "#bf5af2",
-    description: "Deep natural language intelligence extracting institutional sentiment from earnings transcripts, central bank statements, and real-time market news.",
-    features: [
-      "FinBERT sentiment scoring on SEC 10-K & 10-Q corporate filings",
-      "Central bank monetary policy tone and dovish/hawkish classification",
-      "Macro-economic news momentum clustering and anomaly detection"
-    ]
+    color: "#bf5af2"
   }
 };
 
 export default function ComingSoonPage({ pageId, onBackToIntelligence }) {
   const meta = MODULE_META[pageId] || {
     title: "Upcoming Module",
-    badge: "Under Development",
     icon: Clock,
-    color: "#0a84ff",
-    description: "This advanced intelligence module is currently being finalized by the AstraGenX engineering team.",
-    features: [
-      "High-throughput real-time streaming",
-      "Decoupled cloud architecture",
-      "Apple Cupertino responsive design"
-    ]
+    color: "#0a84ff"
   };
 
   const Icon = meta.icon;
 
   return (
     <div style={{
-      maxWidth: "800px",
-      margin: "40px auto 80px",
-      padding: "0 16px"
+      maxWidth: "540px",
+      margin: "60px auto",
+      padding: "0 20px"
     }}>
       <div className="apple-glass" style={{
-        padding: "48px 36px",
+        padding: "52px 32px",
         textAlign: "center",
         position: "relative",
         overflow: "hidden"
@@ -92,28 +55,28 @@ export default function ComingSoonPage({ pageId, onBackToIntelligence }) {
         {/* Subtle Ambient Radial Glow */}
         <div style={{
           position: "absolute",
-          top: "-80px",
+          top: "-70px",
           left: "50%",
           transform: "translateX(-50%)",
-          width: "280px",
-          height: "280px",
-          background: `radial-gradient(circle, ${meta.color}22 0%, rgba(0,0,0,0) 70%)`,
+          width: "240px",
+          height: "240px",
+          background: `radial-gradient(circle, ${meta.color}24 0%, rgba(0,0,0,0) 70%)`,
           pointerEvents: "none"
         }} />
 
         {/* Icon Emblem */}
         <div style={{
-          width: "64px",
-          height: "64px",
-          borderRadius: "18px",
-          background: `rgba(255, 255, 255, 0.05)`,
+          width: "68px",
+          height: "68px",
+          borderRadius: "20px",
+          background: "rgba(255, 255, 255, 0.05)",
           border: `1px solid ${meta.color}44`,
           boxShadow: `0 8px 24px ${meta.color}22`,
           color: meta.color,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          margin: "0 auto 20px",
+          margin: "0 auto 24px",
           position: "relative"
         }}>
           <Icon size={32} strokeWidth={2.2} />
@@ -123,7 +86,7 @@ export default function ComingSoonPage({ pageId, onBackToIntelligence }) {
         <div style={{
           display: "inline-flex",
           alignItems: "center",
-          gap: "8px",
+          gap: "6px",
           padding: "5px 14px",
           borderRadius: "9999px",
           background: "rgba(255, 214, 10, 0.1)",
@@ -134,73 +97,43 @@ export default function ComingSoonPage({ pageId, onBackToIntelligence }) {
           marginBottom: "16px"
         }}>
           <Clock size={13} />
-          <span>Coming Soon in ArthaX 2.1</span>
+          <span>Coming Soon</span>
         </div>
 
         {/* Title */}
         <h1 style={{
-          fontSize: "32px",
+          fontSize: "28px",
           fontWeight: 700,
           fontFamily: "var(--font-display)",
           color: "#ffffff",
           letterSpacing: "-0.02em",
-          marginBottom: "12px"
+          marginBottom: "10px"
         }}>
           {meta.title}
         </h1>
 
-        {/* Description */}
+        {/* Short Minimalist Tagline */}
         <p style={{
-          fontSize: "15px",
-          lineHeight: 1.6,
+          fontSize: "14px",
+          lineHeight: 1.5,
           color: "var(--text-secondary)",
-          maxWidth: "560px",
-          margin: "0 auto 32px"
+          marginBottom: "32px"
         }}>
-          {meta.description}
+          This module is actively being built for ArthaX 2.1.
         </p>
 
-        {/* Planned Features Grid */}
-        <div style={{
-          background: "rgba(255, 255, 255, 0.03)",
-          border: "1px solid rgba(255, 255, 255, 0.06)",
-          borderRadius: "16px",
-          padding: "20px 24px",
-          textAlign: "left",
-          marginBottom: "36px"
-        }}>
-          <div style={{
-            fontSize: "11px",
-            fontWeight: 600,
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-            color: "var(--text-tertiary)",
-            marginBottom: "12px"
-          }}>
-            Planned Engine Features
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            {meta.features.map((feat, idx) => (
-              <div key={idx} style={{ display: "flex", alignItems: "flex-start", gap: "10px", fontSize: "13px", color: "#d1d5db" }}>
-                <span style={{ color: meta.color, marginTop: "2px" }}>●</span>
-                <span>{feat}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Back Button */}
+        {/* Clean Back Button */}
         <button
           onClick={onBackToIntelligence}
           className="apple-button apple-button-primary"
           style={{
-            padding: "10px 24px",
-            fontSize: "14px",
+            padding: "9px 22px",
+            fontSize: "13px",
             fontWeight: 600
           }}
         >
-          <ArrowLeft size={16} />
-          <span>Return to Market Intelligence</span>
+          <ArrowLeft size={15} />
+          <span>Back to Market Intelligence</span>
         </button>
       </div>
     </div>

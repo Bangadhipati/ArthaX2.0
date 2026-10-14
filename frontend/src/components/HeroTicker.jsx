@@ -55,7 +55,7 @@ export default function HeroTicker({
         {/* Big Apple Price + Dual Currency Conversion */}
         <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "14px" }}>
           <div style={{
-            fontSize: "42px",
+            fontSize: "clamp(28px, 6vw, 42px)",
             fontWeight: 700,
             fontFamily: "var(--font-sans)",
             letterSpacing: "-0.03em",

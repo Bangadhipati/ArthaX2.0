@@ -48,7 +48,7 @@ export default function StockChart({
   const domain = [Math.floor(minY - padding), Math.ceil(maxY + padding)];
 
   return (
-    <div style={{ width: "100%", height: "380px", position: "relative" }}>
+    <div className="stock-chart-container">
       <ResponsiveContainer width="100%" height="100%">
         {activeView === "historical" ? (
           <AreaChart data={historyData} margin={{ top: 20, right: 10, left: 10, bottom: 0 }}>
@@ -186,7 +186,7 @@ export default function StockChart({
             <span style={{ width: "10px", height: "3px", background: "#ffd60a", borderRadius: "2px" }} />
             <span style={{ color: "#ffd60a", fontWeight: 500 }}>Prophet Trajectory</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <div className="hide-on-mobile" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ width: "10px", height: "8px", background: "rgba(255, 214, 10, 0.25)", borderRadius: "2px" }} />
             <span style={{ color: "var(--text-secondary)" }}>95% Confidence Interval</span>
           </div>

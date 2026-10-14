@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Search, X, TrendingUp, Globe, Loader2, Zap, Building2 } from "lucide-react";
+import { Search, X, TrendingUp, Globe, Loader2, Zap, Building2, Menu } from "lucide-react";
 import { searchTickers } from "../api";
 
 export default function Navbar({
   aiStatus = "idle",
   onConnectAI,
   usdInrRate,
-  onSelectTicker
+  onSelectTicker,
+  mobileOpen = false,
+  onToggleMobile
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
@@ -62,27 +64,38 @@ export default function Navbar({
   };
 
   return (
-    <header style={{
+    <header className="nav-header-padding" style={{
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
-      padding: "14px 28px",
+      padding: "0 28px",
+      height: "64px",
+      boxSizing: "border-box",
       borderBottom: "1px solid var(--border-subtle)",
-      background: "rgba(10, 11, 15, 0.8)",
+      background: "rgba(10, 11, 15, 0.88)",
       backdropFilter: "blur(24px)",
       WebkitBackdropFilter: "blur(24px)",
-      position: "sticky",
-      top: 0,
-      zIndex: 50
+      flexShrink: 0,
+      position: "relative",
+      zIndex: 100
     }}>
       {/* Brand Identity */}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        {/* Mobile menu drawer trigger button */}
+        <button
+          onClick={onToggleMobile}
+          className="mobile-menu-btn"
+          aria-label="Toggle Navigation Drawer"
+        >
+          {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+        </button>
+
         <img
           src="/astragenx-logo.jpg"
           alt="AstraGenX ArthaX"
           style={{
-            width: "38px",
-            height: "38px",
+            width: "36px",
+            height: "36px",
             borderRadius: "10px",
             objectFit: "cover",
             border: "1px solid rgba(255, 255, 255, 0.12)",
@@ -90,10 +103,10 @@ export default function Navbar({
           }}
         />
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{
               fontFamily: "var(--font-display)",
-              fontSize: "18px",
+              fontSize: "17px",
               fontWeight: 700,
               letterSpacing: "-0.02em",
               color: "#ffffff"
@@ -101,9 +114,9 @@ export default function Navbar({
               ArthaX
             </span>
             <span style={{
-              fontSize: "11px",
+              fontSize: "10px",
               fontWeight: 600,
-              padding: "2px 7px",
+              padding: "1px 6px",
               borderRadius: "9999px",
               background: "rgba(255, 255, 255, 0.08)",
               color: "var(--text-secondary)",
@@ -113,14 +126,14 @@ export default function Navbar({
               2.0
             </span>
           </div>
-          <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: 0, fontWeight: 400 }}>
+          <p className="nav-brand-subtitle" style={{ fontSize: "11px", color: "var(--text-secondary)", margin: 0, fontWeight: 400 }}>
             AstraGenX Intelligence
           </p>
         </div>
       </div>
 
       {/* Inline Apple Search Bar with Anchored Dropdown (No full-screen popup) */}
-      <div ref={containerRef} style={{ position: "relative", width: "400px", maxWidth: "45%" }}>
+      <div ref={containerRef} className="nav-search-container" style={{ position: "relative" }}>
         <div style={{
           display: "flex",
           alignItems: "center",
@@ -276,9 +289,9 @@ export default function Navbar({
       </div>
 
       {/* Right Intelligence Status & Genuine FX Pill */}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        {/* Genuine USD/INR Live FX Pill (No fake 84.10) */}
-        <div style={{
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        {/* Genuine USD/INR Live FX Pill */}
+        <div className="nav-fx-pill" style={{
           display: "flex",
           alignItems: "center",
           gap: "6px",

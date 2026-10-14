@@ -13,6 +13,7 @@ import { Zap, Loader2, Sparkles, TrendingUp, ShieldCheck, LineChart } from "luci
 
 export default function App() {
   const [activePage, setActivePage] = useState("market-intelligence");
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [ticker, setTicker] = useState("AAPL");
   const [activeView, setActiveView] = useState("forecast");
   const [selectedRange, setSelectedRange] = useState("1y");
@@ -96,13 +97,15 @@ export default function App() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+    <div className="app-container">
       {/* Top Navbar with Inline Search Dropdown & Genuine FX Status */}
       <Navbar
         aiStatus={aiStatus}
         onConnectAI={handleConnectAI}
         usdInrRate={stock?.usdInrRate}
         onSelectTicker={handleSelectTicker}
+        mobileOpen={mobileSidebarOpen}
+        onToggleMobile={() => setMobileSidebarOpen((prev) => !prev)}
       />
 
       {/* Desktop macOS Sidebar & Responsive Main Content */}
@@ -110,8 +113,8 @@ export default function App() {
         <Sidebar
           activePage={activePage}
           onSelectPage={setActivePage}
-          usdInrRate={stock?.usdInrRate}
-          aiStatus={aiStatus}
+          mobileOpen={mobileSidebarOpen}
+          onCloseMobile={() => setMobileSidebarOpen(false)}
         />
 
         {/* Main Content Area (Shifted to right on big screens) */}
@@ -310,24 +313,6 @@ export default function App() {
           )}
       </main>
       </div>
-
-      {/* Minimalist Apple Footer */}
-      <footer style={{
-        textAlign: "center",
-        padding: "24px",
-        borderTop: "1px solid var(--border-subtle)",
-        color: "var(--text-tertiary)",
-        fontSize: "12px"
-      }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "4px" }}>
-          <span>ArthaX 2.0 • AstraGenX Financial Intelligence</span>
-          <span>•</span>
-          <span>Powered by Meta Prophet & Yahoo Finance</span>
-        </div>
-        <p style={{ margin: 0, color: "var(--text-tertiary)" }}>
-          100% Genuine Live Market Streaming. Decoupled Architecture.
-        </p>
-      </footer>
     </div>
   );
 }

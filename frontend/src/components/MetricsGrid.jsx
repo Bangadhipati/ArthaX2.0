@@ -23,7 +23,7 @@ export default function MetricsGrid({ stock, forecast }) {
   return (
     <div style={{
       display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+      gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 250px), 1fr))",
       gap: "16px",
       marginTop: "24px"
     }}>
