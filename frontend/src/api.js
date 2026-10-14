@@ -114,7 +114,7 @@ export async function fetchStockData(ticker, range = "1y") {
   return null;
 }
 
-export async function fetchForecastData(ticker, years = 2) {
+export async function fetchForecastData(ticker, years = 2, horizon = "2y") {
   const cleanTicker = ticker.toUpperCase().trim();
   const endpoint = getActiveApiBase();
 
@@ -122,8 +122,8 @@ export async function fetchForecastData(ticker, years = 2) {
     const res = await fetch(`${endpoint}/api/forecast`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ticker: cleanTicker, years }),
-      signal: AbortSignal.timeout(15000)
+      body: JSON.stringify({ ticker: cleanTicker, years, horizon }),
+      signal: AbortSignal.timeout(20000)
     });
     if (res.ok) {
       return await res.json();

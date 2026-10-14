@@ -18,6 +18,7 @@ export default function App() {
   const [activeView, setActiveView] = useState("forecast");
   const [selectedRange, setSelectedRange] = useState("1y");
   const [forecastYears, setForecastYears] = useState(2);
+  const [forecastHorizon, setForecastHorizon] = useState("2y");
 
   const [stock, setStock] = useState(null);
   const [forecast, setForecast] = useState(null);
@@ -46,10 +47,10 @@ export default function App() {
   }, []);
 
   // 3. Load forecast data
-  const loadForecast = useCallback(async (sym, yrs) => {
+  const loadForecast = useCallback(async (sym, yrs, hrz = "2y") => {
     setForecastLoading(true);
     try {
-      const data = await fetchForecastData(sym, yrs);
+      const data = await fetchForecastData(sym, yrs, hrz);
       if (data) setForecast(data);
     } catch (err) {
       console.error("Error loading forecast:", err);
@@ -67,9 +68,9 @@ export default function App() {
 
   useEffect(() => {
     if (aiStatus === "live") {
-      loadForecast(ticker, forecastYears);
+      loadForecast(ticker, forecastYears, forecastHorizon);
     }
-  }, [aiStatus, ticker, forecastYears, loadForecast]);
+  }, [aiStatus, ticker, forecastYears, forecastHorizon, loadForecast]);
 
   // On-demand AI wake up trigger
   const handleConnectAI = useCallback(async () => {
@@ -313,6 +314,7 @@ export default function App() {
                   activeView={activeView}
                   historyData={activeHistoryData}
                   forecastData={activeForecastData}
+                  projectedCandles={forecast?.projectedCandles || []}
                   currency={stock?.symbol === ticker ? (stock?.currency || "USD") : "USD"}
                   stockChange={stock?.symbol === ticker ? (stock?.change || 0) : 0}
                   fxRate={stock?.symbol === ticker ? (stock?.fxRate || stock?.usdInrRate || 84.10) : 84.10}
@@ -326,7 +328,17 @@ export default function App() {
                 selectedRange={selectedRange}
                 onRangeChange={setSelectedRange}
                 forecastYears={forecastYears}
-                onYearsChange={setForecastYears}
+                onYearsChange={(y) => {
+                  setForecastYears(y);
+                  setForecastHorizon(`${y}y`);
+                }}
+                forecastHorizon={forecastHorizon}
+                onHorizonChange={(hrz) => {
+                  setForecastHorizon(hrz);
+                  if (hrz.endsWith("y") && hrz.slice(0, -1)) {
+                    setForecastYears(parseInt(hrz.slice(0, -1), 10));
+                  }
+                }}
                 loading={isGraphLoading}
               />
             </div>

@@ -521,20 +521,83 @@ def get_stock_data(ticker: str, range: str = Query("1y", regex="^(1h|6h|12h|24h|
 
 class ForecastRequest(BaseModel):
     ticker: str
-    years: int = 2
+    years: Optional[int] = 2
+    horizon: Optional[str] = "2y"  # "1d", "1w", "1m", "1y", "2y", "3y", "4y", "5y"
+    granularity: Optional[str] = "auto"
 
 
 @app.post("/api/forecast")
 def generate_forecast(req: ForecastRequest):
-    """Generates multi-year AI price trajectory with Prophet."""
+    """Generates multi-resolution AI price trajectory and projected candlesticks with Prophet."""
     ticker_clean = req.ticker.upper().strip()
-    years = max(1, min(req.years, 5))
+
+    # Normalize horizon
+    raw_h = (req.horizon or "").lower().strip()
+    if raw_h in ["1d", "1w", "1m"]:
+        horizon = raw_h
+        years = 1
+    elif raw_h.endswith("y") and raw_h[:-1].isdigit():
+        years = max(1, min(int(raw_h[:-1]), 5))
+        horizon = f"{years}y"
+    else:
+        years = max(1, min(req.years or 2, 5))
+        horizon = f"{years}y"
 
     try:
         stock = yf.Ticker(ticker_clean)
-        df = stock.history(start=START_DATE, end=TODAY)
-        if df.empty:
-            raise HTTPException(status_code=404, detail="Insufficient historical data to model projections.")
+        is_intraday = horizon in ["1d", "1w"]
+
+        if horizon == "1d":
+            # 1 Day Intraday: Train on recent 5-day 15-minute bars
+            df = stock.history(period="5d", interval="15m")
+            freq = "15min"
+            periods = 48  # next 24 hours at 15-min intervals
+            date_fmt = "%Y-%m-%d %H:%M:%S"
+            fit_daily_seasonality = True
+            fit_weekly_seasonality = False
+            fit_yearly_seasonality = False
+        elif horizon == "1w":
+            # 1 Week: Train on recent 1-month 30-minute / 1-hour bars
+            df = stock.history(period="1mo", interval="30m")
+            if df.empty or len(df) < 30:
+                df = stock.history(period="1mo", interval="1h")
+            freq = "1h"
+            periods = 84  # next 7 days at 1-hour / 2-hour intervals
+            date_fmt = "%Y-%m-%d %H:%M:%S"
+            fit_daily_seasonality = True
+            fit_weekly_seasonality = True
+            fit_yearly_seasonality = False
+        elif horizon == "1m":
+            # 1 Month: Train on recent 6-month daily bars
+            df = stock.history(period="6mo", interval="1d")
+            freq = "1d"
+            periods = 30
+            date_fmt = "%Y-%m-%d"
+            fit_daily_seasonality = False
+            fit_weekly_seasonality = True
+            fit_yearly_seasonality = False
+        else:
+            # Multi-year macro: Train on full history
+            df = stock.history(start=START_DATE, end=TODAY)
+            freq = "1d"
+            periods = years * 365
+            date_fmt = "%Y-%m-%d"
+            fit_daily_seasonality = False
+            fit_weekly_seasonality = False
+            fit_yearly_seasonality = True
+
+        if df.empty or len(df) < 15:
+            # Fallback to general history
+            df = stock.history(period="2y", interval="1d")
+            if df.empty:
+                raise HTTPException(status_code=404, detail="Insufficient historical data to model projections.")
+            freq = "1d"
+            periods = years * 365
+            date_fmt = "%Y-%m-%d"
+            fit_daily_seasonality = False
+            fit_weekly_seasonality = False
+            fit_yearly_seasonality = True
+            is_intraday = False
 
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.get_level_values(0)
@@ -548,64 +611,115 @@ def generate_forecast(req: ForecastRequest):
         if df["Date"].dt.tz is not None:
             df["Date"] = df["Date"].dt.tz_localize(None)
 
-        # Prepare for Prophet
         df_train = df[["Date", "Close"]].rename(columns={"Date": "ds", "Close": "y"})
 
-        # Explicit 95% Bayesian posterior confidence interval
-        m = Prophet(interval_width=0.95, daily_seasonality=False, yearly_seasonality=True, weekly_seasonality=False)
+        m = Prophet(
+            interval_width=0.95,
+            daily_seasonality=fit_daily_seasonality,
+            weekly_seasonality=fit_weekly_seasonality,
+            yearly_seasonality=fit_yearly_seasonality
+        )
         m.fit(df_train)
 
-        period = years * 365
-        future = m.make_future_dataframe(periods=period)
-        future = future[future["ds"].dt.dayofweek < 5]  # Exclude weekends
+        future = m.make_future_dataframe(periods=periods, freq=freq)
+        if not is_intraday:
+            future = future[future["ds"].dt.dayofweek < 5]  # Exclude weekends for daily/macro
 
         forecast = m.predict(future)
 
-        # Merge actual and forecast
         latest_actual_date = df_train["ds"].iloc[-1]
         latest_price = float(df_train["y"].iloc[-1])
         future_price = float(forecast["yhat"].iloc[-1])
+
         growth_pct = round(((future_price - latest_price) / latest_price) * 100, 2)
-        cagr = round(((future_price / latest_price) ** (1 / years) - 1) * 100, 2)
+        cagr = round(((future_price / latest_price) ** (1 / max(1, years)) - 1) * 100, 2) if years > 1 else growth_pct
 
         fast_info = getattr(stock, "fast_info", {})
         currency = fast_info.get("currency", "USD") if hasattr(fast_info, "get") else "USD"
         usd_inr = get_live_usd_inr()
 
-        # Subsample future forecast points (every 7 days)
-        future_only = forecast[forecast["ds"] > latest_actual_date].iloc[::7].copy()
-        if not future_only.empty and future_only.iloc[-1]["ds"] != forecast.iloc[-1]["ds"]:
-            future_only = pd.concat([future_only, forecast.iloc[[-1]]])
+        # Future only
+        future_only = forecast[forecast["ds"] > latest_actual_date].copy()
 
-        # Current price origin point (Today)
+        # Subsample if too dense for multi-year
+        if not is_intraday and len(future_only) > 120:
+            step = 7 if years <= 2 else 14
+            subsampled = future_only.iloc[::step].copy()
+            if not subsampled.empty and subsampled.iloc[-1]["ds"] != future_only.iloc[-1]["ds"]:
+                subsampled = pd.concat([subsampled, future_only.iloc[[-1]]])
+            future_only = subsampled
+
+        # Timeline points (for Corridor Area & Line)
         points = [{
-            "date": latest_actual_date.strftime("%Y-%m-%d"),
+            "date": latest_actual_date.strftime(date_fmt),
             "actual": round(latest_price, 2),
             "predicted": round(latest_price, 2),
             "upper": round(latest_price, 2),
             "lower": round(latest_price, 2)
         }]
 
-        # Future projected AI trajectory
         for _, row in future_only.iterrows():
             points.append({
-                "date": row["ds"].strftime("%Y-%m-%d"),
+                "date": row["ds"].strftime(date_fmt),
                 "actual": None,
                 "predicted": round(float(row["yhat"]), 2),
                 "upper": round(float(row["yhat_upper"]), 2),
                 "lower": max(0.0, round(float(row["yhat_lower"]), 2))
             })
 
+        # Generate Projected Candlesticks
+        projected_candles = [{
+            "time": latest_actual_date.strftime(date_fmt),
+            "open": round(latest_price, 2),
+            "high": round(latest_price, 2),
+            "low": round(latest_price, 2),
+            "close": round(latest_price, 2),
+            "upper": round(latest_price, 2),
+            "lower": round(latest_price, 2),
+            "predicted": round(latest_price, 2),
+            "isProjected": False
+        }]
+
+        prev_close = latest_price
+        for _, row in future_only.iterrows():
+            pred = round(float(row["yhat"]), 2)
+            upper = round(float(row["yhat_upper"]), 2)
+            lower = max(0.01, round(float(row["yhat_lower"]), 2))
+
+            c_open = prev_close
+            c_close = pred
+
+            # Realistic volatility wicks bounded within 95% Bayesian envelope
+            upper_swing = max(0.0, upper - max(c_open, c_close))
+            lower_swing = max(0.0, min(c_open, c_close) - lower)
+
+            c_high = round(max(c_open, c_close) + upper_swing * 0.42, 2)
+            c_low = round(max(0.01, min(c_open, c_close) - lower_swing * 0.42), 2)
+
+            projected_candles.append({
+                "time": row["ds"].strftime(date_fmt),
+                "open": c_open,
+                "high": c_high,
+                "low": c_low,
+                "close": c_close,
+                "upper": upper,
+                "lower": lower,
+                "predicted": pred,
+                "isProjected": True
+            })
+            prev_close = c_close
+
         fx_rate = get_live_fx_to_inr(currency)
         inr_latest = latest_price if currency == "INR" else latest_price * fx_rate
         inr_future = future_price if currency == "INR" else future_price * fx_rate
 
-        sentiment = "Bullish" if growth_pct > 10 else ("Bearish" if growth_pct < -5 else "Neutral / Moderate")
+        sentiment = "Bullish" if growth_pct > 5 else ("Bearish" if growth_pct < -3 else "Neutral / Moderate")
 
         return {
             "symbol": ticker_clean,
             "currency": currency,
             "years": years,
+            "horizon": horizon,
             "currentPrice": round(latest_price, 2),
             "projectedPrice": round(future_price, 2),
             "inrCurrent": round(inr_latest, 2),
@@ -615,7 +729,8 @@ def generate_forecast(req: ForecastRequest):
             "growthPercent": growth_pct,
             "cagr": cagr,
             "sentiment": sentiment,
-            "timeline": points
+            "timeline": points,
+            "projectedCandles": projected_candles
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

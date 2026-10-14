@@ -1,5 +1,5 @@
 import React from "react";
-import { Sliders, Calendar } from "lucide-react";
+import { Sliders, Calendar, Sparkles } from "lucide-react";
 
 export default function RangeAndDepthControls({
   activeView,
@@ -7,9 +7,21 @@ export default function RangeAndDepthControls({
   onRangeChange,
   forecastYears,
   onYearsChange,
+  forecastHorizon = "2y",
+  onHorizonChange,
   loading
 }) {
   const ranges = ["1h", "6h", "12h", "24h", "1w", "1m", "6m", "1y", "5y", "max"];
+
+  const forecastHorizons = [
+    { key: "1d", labelLong: "1 Day (Intraday)", labelShort: "1D", title: "Next 24H Intraday AI Trajectory (15m/1m intervals)" },
+    { key: "1w", labelLong: "1 Week", labelShort: "1W", title: "Next 7 Days AI Trajectory (Hourly intervals)" },
+    { key: "1m", labelLong: "1 Month", labelShort: "1M", title: "Next 30 Days AI Trajectory (Daily intervals)" },
+    { key: "1y", labelLong: "1 Year", labelShort: "1Y", title: "1 Year Macro AI Trajectory" },
+    { key: "2y", labelLong: "2 Years", labelShort: "2Y", title: "2 Years Macro AI Trajectory" },
+    { key: "3y", labelLong: "3 Years", labelShort: "3Y", title: "3 Years Macro AI Trajectory" },
+    { key: "5y", labelLong: "5 Years", labelShort: "5Y", title: "5 Years Macro AI Trajectory" }
+  ];
 
   return (
     <div className="chart-controls-bar">
@@ -39,27 +51,48 @@ export default function RangeAndDepthControls({
           </div>
 
           <div className="segmented-control timeframe-segmented-control">
-            {[1, 2, 3, 4, 5].map((y) => (
-              <button
-                key={y}
-                className={`segmented-option timeframe-btn ${forecastYears === y ? "active active-gold" : ""}`}
-                onClick={() => onYearsChange(y)}
-                disabled={loading}
-                title={`${y} Year${y > 1 ? "s" : ""} AI Prediction Horizon`}
-              >
-                <span className="horizon-long">{y} {y === 1 ? "Year" : "Years"}</span>
-                <span className="horizon-short">{y}Y</span>
-              </button>
-            ))}
+            {forecastHorizons.map((h) => {
+              const isActive = forecastHorizon === h.key;
+              return (
+                <button
+                  key={h.key}
+                  className={`segmented-option timeframe-btn ${isActive ? "active active-gold" : ""}`}
+                  onClick={() => {
+                    if (onHorizonChange) onHorizonChange(h.key);
+                    if (onYearsChange && h.key.endsWith("y")) {
+                      onYearsChange(parseInt(h.key.slice(0, -1), 10));
+                    }
+                  }}
+                  disabled={loading}
+                  title={h.title}
+                >
+                  <span className="horizon-long">{h.labelLong}</span>
+                  <span className="horizon-short">{h.labelShort}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* Subtle Data Mode Status */}
-      <div className="hide-on-mobile" style={{ fontSize: "11px", color: "var(--text-tertiary)", display: "flex", alignItems: "center", gap: "6px" }}>
-        <Calendar size={12} />
-        <span>Hardware Accelerated Engine</span>
-      </div>
+      {/* External Forecast Legend (Placed outside graph to avoid any overlapping) */}
+      {activeView === "forecast" ? (
+        <div className="forecast-external-legend">
+          <div className="forecast-legend-pill">
+            <span className="forecast-legend-line" />
+            <span className="forecast-legend-text">AI Trajectory</span>
+          </div>
+          <div className="forecast-legend-pill">
+            <span className="forecast-legend-band" />
+            <span className="forecast-legend-text">Confidence Corridor</span>
+          </div>
+        </div>
+      ) : (
+        <div className="hide-on-mobile" style={{ fontSize: "11px", color: "var(--text-tertiary)", display: "flex", alignItems: "center", gap: "6px" }}>
+          <Sparkles size={12} style={{ color: "var(--apple-blue)" }} />
+          <span>Hardware Accelerated Engine</span>
+        </div>
+      )}
     </div>
   );
 }

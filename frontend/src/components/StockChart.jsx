@@ -84,6 +84,7 @@ export default function StockChart({
   activeView,
   historyData = [],
   forecastData = [],
+  projectedCandles = [],
   currency = "USD",
   stockChange = 0,
   fxRate,
@@ -125,8 +126,20 @@ export default function StockChart({
     return forecastData.slice(firstPredIdx);
   }, [forecastData]);
 
-  // Active dataset
-  const activeDataset = activeView === "historical" ? historyData : currentAndFutureForecast;
+  // Active Candles (historical OHLC or AI Projected Candlesticks)
+  const activeCandles = useMemo(() => {
+    if (activeView === "historical") return historyData || [];
+    return (projectedCandles && projectedCandles.length > 0) ? projectedCandles : [];
+  }, [activeView, historyData, projectedCandles]);
+
+  // Active dataset for zooming/panning metrics
+  const activeDataset = useMemo(() => {
+    if (activeView === "historical") {
+      return chartType === "candle" ? activeCandles : historyData;
+    }
+    return chartType === "candle" ? activeCandles : currentAndFutureForecast;
+  }, [activeView, chartType, activeCandles, historyData, currentAndFutureForecast]);
+
   const totalCount = activeDataset.length;
 
   // 8 smooth zoom levels from 100% macro view down to fine-grained minute-by-minute inspection
@@ -312,6 +325,13 @@ export default function StockChart({
     return currentAndFutureForecast.slice(startIndex, startIndex + sliceCount);
   }, [currentAndFutureForecast, zoomIndex, sliceCount, panIndex]);
 
+  const visibleCandleData = useMemo(() => {
+    if (!activeCandles || activeCandles.length === 0) return [];
+    if (zoomIndex === 0) return activeCandles;
+    const startIndex = Math.max(0, Math.min(activeCandles.length - sliceCount, panIndex));
+    return activeCandles.slice(startIndex, startIndex + sliceCount);
+  }, [activeCandles, zoomIndex, sliceCount, panIndex]);
+
   // Format forecast points with floating confidenceRange [lower, upper] for proper corridor rendering
   const formattedForecastData = useMemo(() => {
     return visibleForecastData.map((d) => {
@@ -328,7 +348,14 @@ export default function StockChart({
   let minY = Infinity;
   let maxY = -Infinity;
 
-  if (activeView === "historical") {
+  if (chartType === "candle") {
+    visibleCandleData.forEach((d) => {
+      const low = d.low != null ? d.low : (d.lower ?? d.close);
+      const high = d.high != null ? d.high : (d.upper ?? d.close);
+      if (low < minY) minY = low;
+      if (high > maxY) maxY = high;
+    });
+  } else if (activeView === "historical") {
     visibleHistoryData.forEach((d) => {
       const low = d.low != null ? d.low : d.close;
       const high = d.high != null ? d.high : d.close;
@@ -377,29 +404,27 @@ export default function StockChart({
         userSelect: "none"
       }}
     >
-      {/* Historical Chart Type Switcher: Area vs Candlestick */}
-      {activeView === "historical" && (
-        <div className="chart-type-segmented">
-          <button
-            className={`chart-type-btn ${chartType === "area" ? "active" : ""}`}
-            onClick={() => setChartType("area")}
-            title="Area Trendline Chart"
-            aria-label="Area Trendline Chart"
-          >
-            <TrendingUp size={12} />
-            <span>Area</span>
-          </button>
-          <button
-            className={`chart-type-btn ${chartType === "candle" ? "active" : ""}`}
-            onClick={() => setChartType("candle")}
-            title="Candlestick (OHLC) Chart"
-            aria-label="Candlestick (OHLC) Chart"
-          >
-            <BarChart2 size={12} />
-            <span>Candles</span>
-          </button>
-        </div>
-      )}
+      {/* Chart Type Switcher: Area / Corridor vs Candlesticks */}
+      <div className="chart-type-segmented">
+        <button
+          className={`chart-type-btn ${chartType === "area" ? "active" : ""}`}
+          onClick={() => setChartType("area")}
+          title={activeView === "historical" ? "Area Trendline Chart" : "95% Confidence Corridor Chart"}
+          aria-label="Area / Corridor Chart"
+        >
+          <TrendingUp size={12} />
+          <span>{activeView === "historical" ? "Area" : "Corridor"}</span>
+        </button>
+        <button
+          className={`chart-type-btn ${chartType === "candle" ? "active" : ""}`}
+          onClick={() => setChartType("candle")}
+          title={activeView === "historical" ? "Candlestick (OHLC) Chart" : "AI Projected Candlesticks (OHLC)"}
+          aria-label="Candlestick Chart"
+        >
+          <BarChart2 size={12} />
+          <span>{activeView === "historical" ? "Candles" : "AI Candles"}</span>
+        </button>
+      </div>
 
       {/* Floating Cupertino Controls: Pan Mode, Zoom In, Zoom Out, Reset */}
       <div className="chart-zoom-controls">
@@ -441,16 +466,16 @@ export default function StockChart({
             aria-label="Reset zoom"
           >
             <RotateCcw size={11} />
-            <span>Reset</span>
+            <span className="chart-zoom-reset-text">Reset</span>
           </button>
         )}
       </div>
 
       {/* Chart Canvas */}
 
-      {activeView === "historical" && chartType === "candle" ? (
+      {chartType === "candle" ? (
         <CandlestickChart
-          data={visibleHistoryData}
+          data={visibleCandleData}
           domain={domain}
           currSymbol={currSymbol}
           currency={currency}
@@ -458,6 +483,7 @@ export default function StockChart({
           isPanMode={isPanMode}
           isDragging={isDragging}
           isZoomedDeep={isZoomedDeep}
+          isForecast={activeView === "forecast"}
         />
       ) : (
         <ResponsiveContainer width="100%" height="100%">
@@ -601,29 +627,11 @@ export default function StockChart({
           )}
         </ResponsiveContainer>
       )}
-
-      {/* Legend Badge for Forecast View */}
-      {activeView === "forecast" && (
-        <div className="chart-forecast-legend">
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#38bdf8", boxShadow: "0 0 6px #38bdf8" }} />
-            <span style={{ color: "#38bdf8", fontWeight: 500 }}>Current Price</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ width: "8px", height: "3px", background: "#ffd60a", borderRadius: "2px" }} />
-            <span style={{ color: "#ffd60a", fontWeight: 500 }}>AI Trajectory</span>
-          </div>
-          <div className="hide-on-mobile" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ width: "10px", height: "6px", background: "rgba(255, 214, 10, 0.22)", border: "1px dashed rgba(255, 214, 10, 0.5)", borderRadius: "2px" }} />
-            <span style={{ color: "var(--text-secondary)" }}>95% Confidence Corridor</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
-function CandlestickChart({ data, domain, currSymbol, currency, conversionRate, isPanMode, isDragging, isZoomedDeep }) {
+function CandlestickChart({ data, domain, currSymbol, currency, conversionRate, isPanMode, isDragging, isZoomedDeep, isForecast = false }) {
   const containerRef = useRef(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [hoveredIndex, setHoveredIndex] = useState(null);
@@ -702,7 +710,7 @@ function CandlestickChart({ data, domain, currSymbol, currency, conversionRate, 
     }
 
     xTicks.push({
-      label: formatChartTick(data[i].date, data.length, isZoomedDeep),
+      label: formatChartTick(data[i].date || data[i].time, data.length, isZoomedDeep),
       x: clampedX,
       anchor
     });
@@ -781,8 +789,11 @@ function CandlestickChart({ data, domain, currSymbol, currency, conversionRate, 
 
         {/* Candlesticks */}
         {data.map((c, i) => {
+          const isProjected = !!c.isProjected;
           const isGreen = c.close >= c.open;
-          const color = isGreen ? "var(--apple-green)" : "var(--apple-red)";
+          const color = isProjected
+            ? (isGreen ? "#30d158" : "#ff453a")
+            : (isGreen ? "var(--apple-green)" : "var(--apple-red)");
           const centerX = margin.left + i * candleSpacing + candleSpacing / 2;
           const yHigh = getY(c.high);
           const yLow = getY(c.low);
@@ -801,8 +812,9 @@ function CandlestickChart({ data, domain, currSymbol, currency, conversionRate, 
                 x2={centerX}
                 y2={yLow}
                 stroke={color}
-                strokeWidth={isHovered ? 1.8 : 1.2}
-                opacity={isHovered ? 1 : 0.85}
+                strokeWidth={isHovered ? 2 : 1.2}
+                strokeDasharray={isProjected ? "4 1.5" : undefined}
+                opacity={isHovered ? 1 : 0.88}
               />
               {/* Candle Body */}
               <rect
@@ -811,9 +823,10 @@ function CandlestickChart({ data, domain, currSymbol, currency, conversionRate, 
                 width={candleWidth}
                 height={bodyHeight}
                 fill={color}
-                fillOpacity={isGreen ? 0.35 : 0.45}
+                fillOpacity={isProjected ? (isGreen ? 0.45 : 0.52) : (isGreen ? 0.35 : 0.45)}
                 stroke={color}
-                strokeWidth={isHovered ? 1.6 : 1}
+                strokeWidth={isHovered ? 1.8 : 1.1}
+                strokeDasharray={isProjected ? "4 1.5" : undefined}
                 rx={1}
               />
             </g>
@@ -860,8 +873,23 @@ function CandlestickChart({ data, domain, currSymbol, currency, conversionRate, 
             zIndex: 30
           }}
         >
+          {activeCandle.isProjected && (
+            <div style={{
+              fontSize: "10px",
+              fontWeight: 700,
+              color: "var(--apple-gold)",
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              marginBottom: "4px",
+              display: "flex",
+              alignItems: "center",
+              gap: "4px"
+            }}>
+              <span>✨ AI Projected Trajectory</span>
+            </div>
+          )}
           <div style={{ fontSize: "11px", color: "var(--text-secondary)", marginBottom: "4px" }}>
-            {formatFullTooltipDate(activeCandle.date)}
+            {formatFullTooltipDate(activeCandle.date || activeCandle.time)}
           </div>
           <div style={{ display: "flex", alignItems: "baseline", gap: "6px", flexWrap: "wrap", marginBottom: "4px" }}>
             <span style={{ fontSize: "16px", fontWeight: 700, color: activeCandle.close >= activeCandle.open ? "var(--apple-green)" : "var(--apple-red)" }}>
@@ -877,7 +905,11 @@ function CandlestickChart({ data, domain, currSymbol, currency, conversionRate, 
             <span>O: {currSymbol}{activeCandle.open?.toFixed(2)}</span>
             <span>H: {currSymbol}{activeCandle.high?.toFixed(2)}</span>
             <span>L: {currSymbol}{activeCandle.low?.toFixed(2)}</span>
-            <span>Vol: {activeCandle.volume ? (activeCandle.volume >= 1e6 ? `${(activeCandle.volume/1e6).toFixed(1)}M` : `${Math.round(activeCandle.volume/1e3)}k`) : "N/A"}</span>
+            {activeCandle.isProjected ? (
+              <span>Bounds: {currSymbol}{Math.round(activeCandle.lower)}-{Math.round(activeCandle.upper)}</span>
+            ) : (
+              <span>Vol: {activeCandle.volume ? (activeCandle.volume >= 1e6 ? `${(activeCandle.volume/1e6).toFixed(1)}M` : `${Math.round(activeCandle.volume/1e3)}k`) : "N/A"}</span>
+            )}
           </div>
         </div>
       )}
