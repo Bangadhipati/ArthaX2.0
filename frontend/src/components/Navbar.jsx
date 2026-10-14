@@ -77,19 +77,18 @@ export default function Navbar({
     }}>
       {/* Brand Identity */}
       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        <div style={{
-          width: "36px",
-          height: "36px",
-          borderRadius: "10px",
-          background: "linear-gradient(135deg, #0a84ff 0%, #bf5af2 100%)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          boxShadow: "0 4px 14px rgba(10, 132, 255, 0.35)",
-          color: "#ffffff"
-        }}>
-          <TrendingUp size={20} strokeWidth={2.4} />
-        </div>
+        <img
+          src="/astragenx-logo.jpg"
+          alt="AstraGenX ArthaX"
+          style={{
+            width: "38px",
+            height: "38px",
+            borderRadius: "10px",
+            objectFit: "cover",
+            border: "1px solid rgba(255, 255, 255, 0.12)",
+            boxShadow: "0 4px 14px rgba(255, 69, 58, 0.2)"
+          }}
+        />
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <span style={{
