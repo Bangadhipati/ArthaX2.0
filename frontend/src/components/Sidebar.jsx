@@ -77,7 +77,15 @@ export default function Sidebar({
               <div>All rights reserved</div>
               <div className="sidebar-footer-author">
                 Developed by{" "}
-                <span className="sidebar-footer-author-name">Debarghya Bhowmick</span>
+                <a
+                  href="https://bangadhipati.netlify.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="sidebar-footer-link"
+                >
+                  Debarghya Bhowmick
+                  <span className="sidebar-footer-arrow">↗</span>
+                </a>
               </div>
             </div>
           </div>
