@@ -6,11 +6,11 @@ export default function MetricsGrid({ stock, forecast }) {
 
   const currencySymbol = stock.currency === "INR" ? "₹" : (stock.currency === "USD" ? "$" : `${stock.currency} `);
 
-  // Calculate 52W range progress percentage
-  const low = stock.fiftyTwoWeekLow || 100;
-  const high = stock.fiftyTwoWeekHigh || 200;
+  // Calculate 52W range progress percentage from live data
+  const low = stock.fiftyTwoWeekLow != null ? stock.fiftyTwoWeekLow : (stock.latestPrice || 0);
+  const high = stock.fiftyTwoWeekHigh != null ? stock.fiftyTwoWeekHigh : (stock.latestPrice || 0);
   const current = stock.latestPrice || low;
-  const rangePercent = Math.min(100, Math.max(0, ((current - low) / (high - low)) * 100));
+  const rangePercent = high > low ? Math.min(100, Math.max(0, ((current - low) / (high - low)) * 100)) : 50;
 
   const projectedPrice = forecast?.projectedPrice ?? stock.projectedPrice;
   const growth = forecast?.growthPercent ?? stock.growthPercent;

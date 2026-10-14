@@ -387,17 +387,36 @@ def get_stock_data(ticker: str, range: str = Query("1y", regex="^(1m|6m|1y|5y|ma
         change = round(latest_close - prev_close, 2)
         change_pct = round((change / prev_close) * 100, 2) if prev_close else 0.0
 
-        # Currency and fundamentals
+        # Genuine Fundamentals from Yahoo Finance QuoteSummary
+        info = {}
+        try:
+            info = stock.info or {}
+        except Exception:
+            pass
+
         fast_info = getattr(stock, "fast_info", {})
-        currency = fast_info.get("currency", "USD") if hasattr(fast_info, "get") else "USD"
-        
+
+        # Currency
+        currency = info.get("currency") or (fast_info.get("currency") if hasattr(fast_info, "get") else None) or "USD"
+
         usd_inr = get_live_usd_inr()
         inr_price = latest_close if currency == "INR" else latest_close * usd_inr
 
-        # Quick stats
-        fifty_two_high = round(float(fast_info.get("year_high", max(c["high"] for c in candles))), 2) if hasattr(fast_info, "get") and fast_info.get("year_high") else max(c["high"] for c in candles)
-        fifty_two_low = round(float(fast_info.get("year_low", min(c["low"] for c in candles))), 2) if hasattr(fast_info, "get") and fast_info.get("year_low") else min(c["low"] for c in candles)
-        market_cap = fast_info.get("market_cap") if hasattr(fast_info, "get") else None
+        # Genuine 52-Week High & Low
+        raw_52_high = info.get("fiftyTwoWeekHigh") or (fast_info.get("year_high") if hasattr(fast_info, "get") else None) or max(c["high"] for c in candles)
+        fifty_two_high = round(float(raw_52_high), 2)
+
+        raw_52_low = info.get("fiftyTwoWeekLow") or (fast_info.get("year_low") if hasattr(fast_info, "get") else None) or min(c["low"] for c in candles)
+        fifty_two_low = round(float(raw_52_low), 2)
+
+        # Genuine Market Cap, P/E Ratio, and Volume
+        market_cap = info.get("marketCap") or (fast_info.get("market_cap") if hasattr(fast_info, "get") else None)
+        
+        raw_pe = info.get("trailingPE") or info.get("forwardPE")
+        pe_ratio = round(float(raw_pe), 1) if raw_pe else None
+
+        raw_vol = info.get("regularMarketVolume") or candles[-1]["volume"]
+        volume = int(raw_vol) if raw_vol else None
 
         return {
             "symbol": ticker_clean,
@@ -411,6 +430,8 @@ def get_stock_data(ticker: str, range: str = Query("1y", regex="^(1m|6m|1y|5y|ma
             "fiftyTwoWeekHigh": fifty_two_high,
             "fiftyTwoWeekLow": fifty_two_low,
             "marketCap": market_cap,
+            "peRatio": pe_ratio,
+            "volume": volume,
             "history": candles
         }
     except Exception as e:

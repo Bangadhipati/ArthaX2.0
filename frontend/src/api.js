@@ -101,9 +101,9 @@ export async function fetchStockData(ticker, range = "1y") {
       return {
         ...liveData,
         name: liveData.symbol,
-        volume: formatVolume(liveData.history?.[liveData.history.length - 1]?.volume || 0),
+        volume: formatVolume(liveData.volume || liveData.history?.[liveData.history.length - 1]?.volume || 0),
         marketCap: liveData.marketCap ? formatNumber(liveData.marketCap) : "N/A",
-        peRatio: liveData.peRatio || 28.5
+        peRatio: liveData.peRatio != null ? liveData.peRatio : null
       };
     }
   } catch (err) {
