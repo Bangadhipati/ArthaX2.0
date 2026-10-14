@@ -22,7 +22,8 @@ export default function App() {
   const [stock, setStock] = useState(null);
   const [forecast, setForecast] = useState(null);
   const [aiStatus, setAiStatus] = useState("idle"); // "idle" | "connecting" | "live"
-  const [loading, setLoading] = useState(false);
+  const [stockLoading, setStockLoading] = useState(false);
+  const [forecastLoading, setForecastLoading] = useState(false);
 
   // 1. Initial health ping (checks if backend is already warm or local)
   useEffect(() => {
@@ -33,24 +34,27 @@ export default function App() {
 
   // 2. Load stock historical data
   const loadStock = useCallback(async (sym, rng) => {
-    setLoading(true);
+    setStockLoading(true);
     try {
       const data = await fetchStockData(sym, rng);
       if (data) setStock(data);
     } catch (err) {
       console.error("Error loading stock:", err);
     } finally {
-      setLoading(false);
+      setStockLoading(false);
     }
   }, []);
 
   // 3. Load forecast data
   const loadForecast = useCallback(async (sym, yrs) => {
+    setForecastLoading(true);
     try {
       const data = await fetchForecastData(sym, yrs);
       if (data) setForecast(data);
     } catch (err) {
       console.error("Error loading forecast:", err);
+    } finally {
+      setForecastLoading(false);
     }
   }, []);
 
@@ -93,8 +97,23 @@ export default function App() {
   }, [aiStatus]);
 
   const handleSelectTicker = (newTicker) => {
-    setTicker(newTicker.toUpperCase().trim());
+    const sym = newTicker.toUpperCase().trim();
+    if (sym && sym !== ticker) {
+      setTicker(sym);
+      setStockLoading(true);
+      setForecastLoading(true);
+    }
   };
+
+  // Determine dedicated graph loading states to prevent displaying stale chart data
+  const isHistoricalLoading = stockLoading || (stock && stock.symbol !== ticker);
+  const isForecastLoading = forecastLoading || (forecast && forecast.symbol !== ticker);
+  const isGraphLoading = activeView === "historical" ? isHistoricalLoading : isForecastLoading;
+  const loading = isGraphLoading;
+
+  // Clean data arrays: never render the previous company's historical candles or forecast curve
+  const activeHistoryData = stock && stock.symbol === ticker ? (stock.history || []) : [];
+  const activeForecastData = forecast && forecast.symbol === ticker ? (forecast.timeline || []) : [];
 
   return (
     <div className="app-container">
@@ -263,32 +282,41 @@ export default function App() {
 
             {/* Unified Apple Glass Chart Container */}
             <div className="apple-glass" style={{ overflow: "hidden", position: "relative" }}>
-              {loading && (
-                <div style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: "rgba(10, 11, 15, 0.4)",
-                  backdropFilter: "blur(4px)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  zIndex: 10,
-                  fontSize: "13px",
-                  color: "var(--text-secondary)"
-                }}>
-                  Streaming real-time market data...
+              {isGraphLoading && (
+                <div className="chart-loading-overlay">
+                  <div className="chart-loading-content">
+                    <div className="chart-loading-spinner-wrapper">
+                      <div className="chart-loading-pulse-ring" />
+                      <Loader2 size={32} className="spin-animation chart-loading-icon" />
+                    </div>
+                    <div className="chart-loading-meta">
+                      <div className="chart-loading-title">
+                        {activeView === "historical"
+                          ? `Syncing ${ticker} Market History...`
+                          : `Generating Prophet AI Trajectory for ${ticker}...`}
+                      </div>
+                      <div className="chart-loading-subtitle">
+                        {activeView === "historical"
+                          ? "Streaming real-time order ticks, FX conversion & OHLC candles"
+                          : "Synthesizing historical seasonality & calibrating 95% confidence corridor"}
+                      </div>
+                    </div>
+                    <div className="chart-loading-bar-track">
+                      <div className="chart-loading-bar-fill" />
+                    </div>
+                  </div>
                 </div>
               )}
 
               <div className="stock-chart-wrapper">
                 <StockChart
                   activeView={activeView}
-                  historyData={stock?.history || []}
-                  forecastData={forecast?.timeline || []}
-                  currency={stock?.currency || "USD"}
-                  stockChange={stock?.change || 0}
-                  fxRate={stock?.fxRate || stock?.usdInrRate || 84.10}
-                  usdInrRate={stock?.usdInrRate || 84.10}
+                  historyData={activeHistoryData}
+                  forecastData={activeForecastData}
+                  currency={stock?.symbol === ticker ? (stock?.currency || "USD") : "USD"}
+                  stockChange={stock?.symbol === ticker ? (stock?.change || 0) : 0}
+                  fxRate={stock?.symbol === ticker ? (stock?.fxRate || stock?.usdInrRate || 84.10) : 84.10}
+                  usdInrRate={stock?.symbol === ticker ? (stock?.usdInrRate || 84.10) : 84.10}
                 />
               </div>
 
@@ -299,7 +327,7 @@ export default function App() {
                 onRangeChange={setSelectedRange}
                 forecastYears={forecastYears}
                 onYearsChange={setForecastYears}
-                loading={loading}
+                loading={isGraphLoading}
               />
             </div>
 
