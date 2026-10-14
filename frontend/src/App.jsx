@@ -280,6 +280,7 @@ export default function App() {
                   forecastData={forecast?.timeline || []}
                   currency={stock?.currency || "USD"}
                   stockChange={stock?.change || 0}
+                  fxRate={stock?.fxRate || stock?.usdInrRate || 84.10}
                   usdInrRate={stock?.usdInrRate || 84.10}
                 />
               </div>
@@ -314,7 +315,7 @@ export default function App() {
               Connecting to AI Engine...
             </h2>
             <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.6, maxWidth: "480px", margin: "0 auto 24px" }}>
-              Waking up the Python backend server and establishing real-time connections to Yahoo Finance and Meta Prophet.
+              Waking up the Python backend server and establishing real-time connections to Global Market Feeds and Meta Prophet.
             </p>
             <div style={{
               display: "inline-flex",
@@ -384,7 +385,7 @@ export default function App() {
               <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "14px", padding: "14px" }}>
                 <div style={{ color: "var(--apple-green)", marginBottom: "4px" }}><LineChart size={16} /></div>
                 <div style={{ fontSize: "13px", fontWeight: 600, color: "#ffffff", marginBottom: "2px" }}>Real Market Data</div>
-                <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>Live Yahoo Finance candlestick stream</div>
+                <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>Live Institutional candlestick stream</div>
               </div>
               <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "14px", padding: "14px" }}>
                 <div style={{ color: "var(--apple-gold)", marginBottom: "4px" }}><Sparkles size={16} /></div>

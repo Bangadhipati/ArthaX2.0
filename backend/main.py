@@ -49,6 +49,45 @@ def get_live_usd_inr():
     return 84.00
 
 
+def get_live_fx_to_inr(from_currency: str = "USD") -> float:
+    """Fetches real-time exchange rate from asset's native currency to INR."""
+    curr = (from_currency or "USD").upper().strip()
+    if curr == "INR":
+        return 1.0
+    try:
+        # e.g., USDINR=X, EURINR=X, GBPINR=X, JPYINR=X, CADINR=X, AUDINR=X
+        fx_pair = f"{curr}INR=X"
+        fx_ticker = yf.Ticker(fx_pair)
+        fx_data = fx_ticker.history(period="2d")
+        if not fx_data.empty:
+            if isinstance(fx_data.columns, pd.MultiIndex):
+                fx_data.columns = fx_data.columns.get_level_values(0)
+            val = float(fx_data["Close"].dropna().iloc[-1])
+            if val > 0:
+                return float(val)
+    except Exception:
+        pass
+
+    usd_rate = get_live_usd_inr()
+    if curr == "USD":
+        return usd_rate
+    # Common cross rates fallback if direct FX ticker fails
+    cross_rates_to_usd = {
+        "EUR": 1.08,
+        "GBP": 1.29,
+        "CAD": 0.73,
+        "AUD": 0.65,
+        "JPY": 0.0066,
+        "CHF": 1.13,
+        "SGD": 0.76,
+        "HKD": 0.128,
+        "CNY": 0.14
+    }
+    multiplier = cross_rates_to_usd.get(curr, 1.0)
+    return round(usd_rate * multiplier, 4)
+
+
+
 @app.get("/", response_class=HTMLResponse)
 def root_status_page():
     """Returns a sleek Apple Cupertino dark-mode status landing page."""
@@ -397,10 +436,12 @@ def get_stock_data(ticker: str, range: str = Query("1y", regex="^(1m|6m|1y|5y|ma
         fast_info = getattr(stock, "fast_info", {})
 
         # Currency
-        currency = info.get("currency") or (fast_info.get("currency") if hasattr(fast_info, "get") else None) or "USD"
+        raw_currency = info.get("currency") or (fast_info.get("currency") if hasattr(fast_info, "get") else None) or "USD"
+        currency = str(raw_currency).upper().strip()
 
         usd_inr = get_live_usd_inr()
-        inr_price = latest_close if currency == "INR" else latest_close * usd_inr
+        fx_rate = get_live_fx_to_inr(currency)
+        inr_price = latest_close if currency == "INR" else latest_close * fx_rate
 
         # Genuine 52-Week High & Low
         raw_52_high = info.get("fiftyTwoWeekHigh") or (fast_info.get("year_high") if hasattr(fast_info, "get") else None) or max(c["high"] for c in candles)
@@ -423,6 +464,7 @@ def get_stock_data(ticker: str, range: str = Query("1y", regex="^(1m|6m|1y|5y|ma
             "currency": currency,
             "latestPrice": latest_close,
             "inrPrice": round(inr_price, 2),
+            "fxRate": round(fx_rate, 2),
             "usdInrRate": round(usd_inr, 2),
             "change": change,
             "changePercent": change_pct,
@@ -526,8 +568,9 @@ def generate_forecast(req: ForecastRequest):
                 "lower": max(0.0, round(float(row["yhat_lower"]), 2))
             })
 
-        inr_latest = latest_price if currency == "INR" else latest_price * usd_inr
-        inr_future = future_price if currency == "INR" else future_price * usd_inr
+        fx_rate = get_live_fx_to_inr(currency)
+        inr_latest = latest_price if currency == "INR" else latest_price * fx_rate
+        inr_future = future_price if currency == "INR" else future_price * fx_rate
 
         sentiment = "Bullish" if growth_pct > 10 else ("Bearish" if growth_pct < -5 else "Neutral / Moderate")
 
@@ -539,6 +582,7 @@ def generate_forecast(req: ForecastRequest):
             "projectedPrice": round(future_price, 2),
             "inrCurrent": round(inr_latest, 2),
             "inrProjected": round(inr_future, 2),
+            "fxRate": round(fx_rate, 2),
             "usdInrRate": round(usd_inr, 2),
             "growthPercent": growth_pct,
             "cagr": cagr,

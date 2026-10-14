@@ -197,7 +197,9 @@ export default function MetricsGrid({ stock, forecast }) {
           Asset Native: {stock.currency}
         </div>
         <div style={{ fontSize: "11.5px", color: "var(--text-secondary)", marginBottom: "10px" }}>
-          Converted in real time to INR via live Yahoo FX stream.
+          {stock.currency === "INR"
+            ? "Domestic Indian market asset traded directly in Indian Rupee."
+            : "Converted in real time to INR via live institutional FX stream."}
         </div>
 
         <div style={{
@@ -208,7 +210,9 @@ export default function MetricsGrid({ stock, forecast }) {
           color: "var(--apple-cyan)",
           fontWeight: 500
         }}>
-          1 USD = ₹{stock.usdInrRate || "84.10"}
+          {stock.currency === "INR"
+            ? "1 INR = ₹1.00 (Direct Domestic Parity)"
+            : `1 ${stock.currency} = ₹${stock.fxRate || stock.usdInrRate || "84.10"}`}
         </div>
       </div>
     </div>

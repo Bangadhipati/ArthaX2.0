@@ -749,6 +749,29 @@ input[type="range"].cupertino-slider::-webkit-slider-thumb:hover {
   border-radius: 0 6px 6px 0;
 }
 
+.chart-controls-divider {
+  width: 1px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 0 2px;
+}
+
+.chart-pan-toggle {
+  color: var(--text-secondary);
+}
+
+.chart-pan-toggle:hover {
+  color: #ffffff;
+}
+
+.chart-pan-toggle.active {
+  background: rgba(10, 132, 255, 0.24) !important;
+  color: #38bdf8 !important;
+  font-weight: 600;
+  border-radius: 9999px;
+  box-shadow: 0 0 10px rgba(10, 132, 255, 0.35);
+}
+
 @media (max-width: 640px) {
   .chart-zoom-controls {
     top: 6px;
@@ -759,6 +782,10 @@ input[type="range"].cupertino-slider::-webkit-slider-thumb:hover {
   .chart-zoom-btn {
     padding: 3px 5px;
     font-size: 10px;
+  }
+  .chart-controls-divider {
+    height: 11px;
+    margin: 0 1px;
   }
 }
 
@@ -785,6 +812,32 @@ input[type="range"].cupertino-slider::-webkit-slider-thumb:hover {
   animation: fadeIn 0.2s ease;
   user-select: none;
   white-space: nowrap;
+}
+
+.chart-pan-badge.active-pan-mode {
+  background: rgba(10, 24, 45, 0.92);
+  border-color: rgba(10, 132, 255, 0.45);
+  color: #ffffff;
+  pointer-events: auto;
+  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.25);
+}
+
+.chart-pan-badge-exit {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--apple-cyan);
+  font-size: 9.5px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  transition: all 0.15s ease;
+}
+
+.chart-pan-badge-exit:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
 }
 
 @media (max-width: 1023px) {
