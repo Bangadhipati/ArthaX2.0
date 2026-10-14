@@ -32,6 +32,7 @@ export default function App() {
   useEffect(() => {
     let isMounted = true;
     let pollTimer = null;
+    let attempts = 0;
 
     const check = async () => {
       try {
@@ -44,8 +45,15 @@ export default function App() {
         // Backend waking up
       }
 
+      attempts++;
+      // After ~35-40 seconds, switch to "idle" state so user sees "AI Cloud Server Asleep"
+      // with a direct Connect button instead of spinning forever if Render is off
+      if (attempts >= 5 && isMounted) {
+        setAiStatus("idle");
+      }
+
       if (isMounted) {
-        pollTimer = setTimeout(check, 3500);
+        pollTimer = setTimeout(check, 6000);
       }
     };
 

@@ -17,7 +17,7 @@ export async function checkBackendHealth() {
   if (import.meta.env.VITE_API_URL) {
     const configured = import.meta.env.VITE_API_URL.replace(/\/+$/, "");
     try {
-      const res = await fetch(`${configured}/api/health`, { signal: AbortSignal.timeout(3000) });
+      const res = await fetch(`${configured}/api/health`, { signal: AbortSignal.timeout(10000) });
       if (res.ok) {
         currentApiBase = configured;
         return true;
@@ -38,7 +38,7 @@ export async function checkBackendHealth() {
 
   // 3. Fallback to Cloud Render backend
   try {
-    const res = await fetch(`${cloudUrl}/api/health`, { signal: AbortSignal.timeout(5000) });
+    const res = await fetch(`${cloudUrl}/api/health`, { signal: AbortSignal.timeout(10000) });
     if (res.ok) {
       currentApiBase = cloudUrl;
       return true;
