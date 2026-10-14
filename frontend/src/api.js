@@ -1,10 +1,21 @@
 import { MOCK_STOCKS, POPULAR_TICKERS, generateForecastTimeline } from "./mockData";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const getApiBase = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL.replace(/\/+$/, "");
+  }
+  // If running in production (e.g. Vercel), default automatically to Render backend
+  if (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+    return "https://arthax-api.onrender.com";
+  }
+  return "http://localhost:8000";
+};
+
+const API_BASE = getApiBase();
 
 export async function checkBackendHealth() {
   try {
-    const res = await fetch(`${API_BASE}/api/health`, { method: "GET", signal: AbortSignal.timeout(2000) });
+    const res = await fetch(`${API_BASE}/api/health`, { method: "GET", signal: AbortSignal.timeout(6000) });
     return res.ok;
   } catch {
     return false;
