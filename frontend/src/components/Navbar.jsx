@@ -242,7 +242,7 @@ export default function Navbar({
               className="mobile-menu-btn"
               aria-label="Toggle Navigation Drawer"
             >
-              <MoreVertical size={18} />
+              <MoreVertical size={21} />
             </button>
 
             {/* Circular AstraGenX Logo */}
@@ -260,7 +260,7 @@ export default function Navbar({
             />
 
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <div style={{ display: "flex", alignItems: "center" }}>
                 <span style={{
                   fontFamily: "var(--font-display)",
                   fontSize: "19px",
@@ -269,18 +269,6 @@ export default function Navbar({
                   color: "#ffffff"
                 }}>
                   ArthaX
-                </span>
-                <span style={{
-                  fontSize: "10px",
-                  fontWeight: 700,
-                  padding: "1px 6px",
-                  borderRadius: "9999px",
-                  background: "rgba(255, 255, 255, 0.08)",
-                  color: "var(--text-secondary)",
-                  letterSpacing: "0.04em",
-                  textTransform: "uppercase"
-                }}>
-                  2.0
                 </span>
               </div>
               <p style={{
