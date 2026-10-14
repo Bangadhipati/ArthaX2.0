@@ -325,16 +325,6 @@ def search_ticker(q: str = Query(..., min_length=1, description="Company name or
                 seen.add(item["symbol"])
                 deduped.append(item)
 
-        # Always offer direct symbol lookup if user typed an exact symbol
-        clean_q = query.upper().strip()
-        if clean_q and clean_q not in seen and len(clean_q) <= 15:
-            deduped.insert(0, {
-                "symbol": clean_q,
-                "name": f"Direct Symbol Lookup: {clean_q}",
-                "exchange": "Market",
-                "type": "DIRECT"
-            })
-
         return {"results": deduped[:25]}
     except Exception as e:
         return {"results": [], "error": str(e)}

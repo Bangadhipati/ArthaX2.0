@@ -55,8 +55,6 @@ export default function Navbar({
       e.preventDefault();
       if (results && results.length > 0) {
         handleSelect(results[0].symbol);
-      } else if (query.trim()) {
-        handleSelect(query.toUpperCase().trim());
       }
     } else if (e.key === "Escape") {
       setIsOpen(false);
@@ -206,17 +204,8 @@ export default function Navbar({
                 <span>Searching markets for "{query}"...</span>
               </div>
             ) : results.length === 0 ? (
-              <div style={{ padding: "14px", textAlign: "center" }}>
-                <p style={{ color: "var(--text-secondary)", fontSize: "12px", margin: "0 0 8px" }}>
-                  No match found for "{query}".
-                </p>
-                <button
-                  onClick={() => handleSelect(query.toUpperCase().trim())}
-                  className="apple-button apple-button-primary"
-                  style={{ padding: "6px 14px", fontSize: "11px", margin: "0 auto" }}
-                >
-                  Analyze "{query.toUpperCase().trim()}" Directly ↵
-                </button>
+              <div style={{ padding: "16px", textAlign: "center", color: "var(--text-secondary)", fontSize: "12px" }}>
+                No companies found matching "{query}".
               </div>
             ) : (
               results.map((item) => (

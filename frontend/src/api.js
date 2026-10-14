@@ -85,11 +85,7 @@ export async function searchTickers(query) {
     }
   }
 
-  // Tier 3: Direct symbol lookup with uppercase formatting
-  const upperTicker = qClean.toUpperCase();
-  return [
-    { symbol: upperTicker, name: `Direct Symbol Lookup: ${upperTicker}`, exchange: "Market", type: "DIRECT" }
-  ];
+  return [];
 }
 
 export async function fetchStockData(ticker, range = "1y") {
