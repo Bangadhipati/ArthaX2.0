@@ -194,7 +194,7 @@ export default function App() {
                 <div className="market-status-group">
                   {/* Dynamic FX exchange value: displays asset native to INR, disappears for Rupees */}
                   {(!stock || (stock.currency !== "INR" && !ticker.endsWith(".NS") && !ticker.endsWith(".BO"))) && (
-                    aiStatus !== "live" ? (
+                    (aiStatus !== "live" || stockLoading || stock?.symbol !== ticker || (!stock?.fxRate && !stock?.usdInrRate)) ? (
                       <div
                         className="skeleton-card"
                         style={{
@@ -231,7 +231,7 @@ export default function App() {
                         <span>
                           1 {stock?.currency || "USD"} ={" "}
                           <strong style={{ color: "#ffffff" }}>
-                            ₹{Number(stock?.fxRate || stock?.usdInrRate).toFixed(2)}
+                            ₹{Number(stock.fxRate || stock.usdInrRate).toFixed(2)}
                           </strong>
                         </span>
                       </div>
@@ -350,8 +350,8 @@ export default function App() {
                         projectedCandles={forecast?.projectedCandles || []}
                         currency={stock?.symbol === ticker ? (stock?.currency || "USD") : "USD"}
                         stockChange={stock?.symbol === ticker ? (stock?.change || 0) : 0}
-                        fxRate={stock?.symbol === ticker ? (stock?.fxRate || stock?.usdInrRate || 84.10) : 84.10}
-                        usdInrRate={stock?.symbol === ticker ? (stock?.usdInrRate || 84.10) : 84.10}
+                        fxRate={stock?.symbol === ticker ? (stock?.fxRate || stock?.usdInrRate) : null}
+                        usdInrRate={stock?.symbol === ticker ? (stock?.usdInrRate) : null}
                       />
                     </div>
                   </>

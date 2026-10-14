@@ -287,7 +287,9 @@ export default function MetricsGrid({ stock, forecast, loading = false }) {
         }}>
           {stock.currency === "INR"
             ? "1 INR = ₹1.00 (Direct Domestic Parity)"
-            : `1 ${stock.currency} = ₹${stock.fxRate || stock.usdInrRate || "84.10"}`}
+            : (stock.fxRate || stock.usdInrRate
+                ? `1 ${stock.currency} = ₹${Number(stock.fxRate || stock.usdInrRate).toFixed(2)}`
+                : `1 ${stock.currency} = Live FX Syncing...`)}
         </div>
       </div>
     </div>

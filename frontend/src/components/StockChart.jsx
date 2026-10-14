@@ -88,7 +88,7 @@ export default function StockChart({
   currency = "USD",
   stockChange = 0,
   fxRate,
-  usdInrRate = 84.10
+  usdInrRate = null
 }) {
   const [zoomIndex, setZoomIndex] = useState(0);
   const [panIndex, setPanIndex] = useState(0);
@@ -114,7 +114,7 @@ export default function StockChart({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const conversionRate = Number(fxRate || usdInrRate) || 84.10;
+  const conversionRate = Number(fxRate || usdInrRate) || null;
   const isPositive = stockChange >= 0;
   const currSymbol = currency === "INR" ? "₹" : (currency === "USD" ? "$" : `${currency} `);
 

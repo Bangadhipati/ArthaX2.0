@@ -37,16 +37,19 @@ TODAY = date.today().strftime("%Y-%m-%d")
 
 def get_live_usd_inr():
     """Fetches real-time USD to INR exchange rate."""
-    try:
-        inr_ticker = yf.Ticker("INR=X")
-        inr_data = inr_ticker.history(period="1d")
-        if not inr_data.empty:
-            if isinstance(inr_data.columns, pd.MultiIndex):
-                inr_data.columns = inr_data.columns.get_level_values(0)
-            return float(inr_data["Close"].iloc[-1])
-    except Exception:
-        pass
-    return 84.00
+    for sym in ["INR=X", "USDINR=X"]:
+        try:
+            inr_ticker = yf.Ticker(sym)
+            inr_data = inr_ticker.history(period="5d")
+            if not inr_data.empty:
+                if isinstance(inr_data.columns, pd.MultiIndex):
+                    inr_data.columns = inr_data.columns.get_level_values(0)
+                val = float(inr_data["Close"].dropna().iloc[-1])
+                if val > 0:
+                    return val
+        except Exception:
+            continue
+    return 88.65
 
 
 def get_live_fx_to_inr(from_currency: str = "USD") -> float:
