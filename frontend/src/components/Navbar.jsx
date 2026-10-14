@@ -262,7 +262,7 @@ export default function Navbar({
             <div>
               <div style={{ display: "flex", alignItems: "center" }}>
                 <span className="nav-brand-title">
-                  ArthaAstra<span className="brand-x">X</span>
+                  Artha<span className="brand-x">X</span>
                 </span>
               </div>
               <p className="nav-brand-subtitle">
