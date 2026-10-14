@@ -34,8 +34,16 @@ export default function StockChart({
   const isPositive = stockChange >= 0;
   const currSymbol = currency === "INR" ? "₹" : (currency === "USD" ? "$" : `${currency} `);
 
+  // Filter forecast data so it only shows current price today and the future trajectory (no past)
+  const currentAndFutureForecast = useMemo(() => {
+    if (!forecastData || forecastData.length === 0) return [];
+    const firstPredIdx = forecastData.findIndex((d) => d.predicted !== null);
+    if (firstPredIdx <= 0) return forecastData;
+    return forecastData.slice(firstPredIdx);
+  }, [forecastData]);
+
   // Active dataset
-  const activeDataset = activeView === "historical" ? historyData : forecastData;
+  const activeDataset = activeView === "historical" ? historyData : currentAndFutureForecast;
   const totalCount = activeDataset.length;
 
   // 6 smooth zoom levels from 100% down to 10% ultra fine detail
@@ -49,13 +57,13 @@ export default function StockChart({
   // Anchor pan to the latest slice when zoom or data changes
   useEffect(() => {
     setPanIndex(maxStartIndex);
-  }, [zoomIndex, activeView, historyData.length, forecastData.length, maxStartIndex]);
+  }, [zoomIndex, activeView, historyData.length, currentAndFutureForecast.length, maxStartIndex]);
 
   // Reset zoom on view change
   useEffect(() => {
     setZoomIndex(0);
     setIsPanMode(false);
-  }, [activeView, historyData.length, forecastData.length]);
+  }, [activeView, historyData.length, currentAndFutureForecast.length]);
 
   const handleZoomIn = () => {
     setZoomIndex((prev) => Math.min(prev + 1, MAX_ZOOM));
@@ -204,11 +212,11 @@ export default function StockChart({
   }, [historyData, zoomIndex, sliceCount, panIndex]);
 
   const visibleForecastData = useMemo(() => {
-    if (!forecastData || forecastData.length === 0) return [];
-    if (zoomIndex === 0) return forecastData;
-    const startIndex = Math.max(0, Math.min(forecastData.length - sliceCount, panIndex));
-    return forecastData.slice(startIndex, startIndex + sliceCount);
-  }, [forecastData, zoomIndex, sliceCount, panIndex]);
+    if (!currentAndFutureForecast || currentAndFutureForecast.length === 0) return [];
+    if (zoomIndex === 0) return currentAndFutureForecast;
+    const startIndex = Math.max(0, Math.min(currentAndFutureForecast.length - sliceCount, panIndex));
+    return currentAndFutureForecast.slice(startIndex, startIndex + sliceCount);
+  }, [currentAndFutureForecast, zoomIndex, sliceCount, panIndex]);
 
   // Dynamic bounds for high-res zoom
   let minY = Infinity;
@@ -448,13 +456,14 @@ export default function StockChart({
                 stroke="transparent"
                 fill="url(#confidenceGradient)"
               />
-              {/* Baseline actual price line */}
+              {/* Current Price origin anchor dot */}
               <Line
                 type="monotone"
                 dataKey="actual"
                 stroke="#38bdf8"
-                strokeWidth={2.4}
-                dot={false}
+                strokeWidth={0}
+                dot={{ r: 4.5, fill: "#38bdf8", stroke: "#ffffff", strokeWidth: 1.5 }}
+                isAnimationActive={false}
               />
               {/* Future Prophet predicted line */}
               <Line
@@ -473,15 +482,15 @@ export default function StockChart({
       {/* Legend Badge for Forecast View */}
       {activeView === "forecast" && (
         <div className="chart-forecast-legend">
-          <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-            <span style={{ width: "8px", height: "3px", background: "#38bdf8", borderRadius: "2px" }} />
-            <span style={{ color: "var(--text-secondary)" }}>Historical</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#38bdf8", boxShadow: "0 0 6px #38bdf8" }} />
+            <span style={{ color: "#38bdf8", fontWeight: 500 }}>Current Price</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ width: "8px", height: "3px", background: "#ffd60a", borderRadius: "2px" }} />
             <span style={{ color: "#ffd60a", fontWeight: 500 }}>AI Trajectory</span>
           </div>
-          <div className="hide-on-mobile" style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+          <div className="hide-on-mobile" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ width: "8px", height: "8px", background: "rgba(255, 214, 10, 0.25)", borderRadius: "2px" }} />
             <span style={{ color: "var(--text-secondary)" }}>95% Confidence Interval</span>
           </div>

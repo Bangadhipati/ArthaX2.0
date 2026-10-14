@@ -532,33 +532,21 @@ def generate_forecast(req: ForecastRequest):
         currency = fast_info.get("currency", "USD") if hasattr(fast_info, "get") else "USD"
         usd_inr = get_live_usd_inr()
 
-        # Subsample historical points to keep frontend lightning fast (every 7 days)
-        hist_sampled = df_train.iloc[::7].copy()
-        if hist_sampled.iloc[-1]["ds"] != df_train.iloc[-1]["ds"]:
-            hist_sampled = pd.concat([hist_sampled, df_train.iloc[[-1]]])
-
-        # Subsample forecast points (every 7 days)
+        # Subsample future forecast points (every 7 days)
         future_only = forecast[forecast["ds"] > latest_actual_date].iloc[::7].copy()
         if not future_only.empty and future_only.iloc[-1]["ds"] != forecast.iloc[-1]["ds"]:
             future_only = pd.concat([future_only, forecast.iloc[[-1]]])
 
-        points = []
-        # Historical baseline
-        for _, row in hist_sampled.iterrows():
-            points.append({
-                "date": row["ds"].strftime("%Y-%m-%d"),
-                "actual": round(float(row["y"]), 2),
-                "predicted": None,
-                "upper": None,
-                "lower": None
-            })
+        # Current price origin point (Today)
+        points = [{
+            "date": latest_actual_date.strftime("%Y-%m-%d"),
+            "actual": round(latest_price, 2),
+            "predicted": round(latest_price, 2),
+            "upper": round(latest_price, 2),
+            "lower": round(latest_price, 2)
+        }]
 
-        # Connect the seam
-        points[-1]["predicted"] = points[-1]["actual"]
-        points[-1]["upper"] = points[-1]["actual"]
-        points[-1]["lower"] = points[-1]["actual"]
-
-        # Future projected curve
+        # Future projected AI trajectory
         for _, row in future_only.iterrows():
             points.append({
                 "date": row["ds"].strftime("%Y-%m-%d"),

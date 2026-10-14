@@ -146,34 +146,18 @@ function generateHistoricalCandles(latest, days, volatility) {
 export function generateForecastTimeline(basePrice, years, expectedCagr) {
   const points = [];
   const now = new Date();
-  const pastDays = 120; // 4 months past baseline
   const cagrDecimal = (expectedCagr > 1 ? expectedCagr / 100 : expectedCagr) || 0.15;
-  let price = basePrice * (1 - (pastDays / 365) * cagrDecimal * 0.8);
 
-  // 1. Past historical segment (sampled weekly)
-  for (let i = pastDays; i >= 0; i -= 7) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    if (d.getDay() === 0 || d.getDay() === 6) continue;
+  // Exact anchor at today (Current Price)
+  points.push({
+    date: now.toISOString().split("T")[0],
+    actual: basePrice,
+    predicted: basePrice,
+    upper: basePrice,
+    lower: basePrice
+  });
 
-    price += (cagrDecimal * basePrice * 7) / 365 + (Math.random() - 0.5) * (basePrice * 0.02);
-
-    points.push({
-      date: d.toISOString().split("T")[0],
-      actual: parseFloat(price.toFixed(2)),
-      predicted: null,
-      upper: null,
-      lower: null
-    });
-  }
-
-  // Exact anchor at today
-  points[points.length - 1].actual = basePrice;
-  points[points.length - 1].predicted = basePrice;
-  points[points.length - 1].upper = basePrice;
-  points[points.length - 1].lower = basePrice;
-
-  // 2. Future Prophet forecast trajectory
+  // Future Prophet forecast trajectory
   const futureDays = years * 365;
 
   for (let i = 7; i <= futureDays; i += 7) {
