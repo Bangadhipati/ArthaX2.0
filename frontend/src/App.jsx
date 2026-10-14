@@ -185,26 +185,49 @@ export default function App() {
                 {/* Currency exchange value based on asset native (disappears for INR) and beside it Connect AI Live stuff */}
                 <div className="market-status-group">
                   {/* Dynamic FX exchange value: displays asset native to INR, disappears for Rupees */}
-                  {(!stock || stock.currency !== "INR") && (
-                    <div style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      background: "rgba(255, 255, 255, 0.05)",
-                      border: "1px solid var(--border-subtle)",
-                      padding: "4px 10px",
-                      borderRadius: "9999px",
-                      fontSize: "12px",
-                      color: "var(--text-secondary)"
-                    }}>
-                      <Globe size={13} style={{ color: "var(--apple-cyan)" }} />
-                      <span>
-                        1 {stock?.currency || "USD"} ={" "}
-                        <strong style={{ color: "#ffffff" }}>
-                          ₹{Number(stock?.fxRate || stock?.usdInrRate || 84.10).toFixed(2)}
-                        </strong>
-                      </span>
-                    </div>
+                  {(!stock || (stock.currency !== "INR" && !ticker.endsWith(".NS") && !ticker.endsWith(".BO"))) && (
+                    aiStatus !== "live" ? (
+                      <div
+                        className="skeleton-card"
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          background: "rgba(255, 255, 255, 0.05)",
+                          border: "1px solid var(--border-subtle)",
+                          padding: "4px 10px",
+                          borderRadius: "9999px",
+                          fontSize: "12px",
+                          color: "var(--text-secondary)"
+                        }}
+                      >
+                        <Globe size={13} className="spin-animation" style={{ color: "var(--apple-cyan)" }} />
+                        <span style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>
+                          1 {stock?.currency || "USD"} =
+                        </span>
+                        <span className="skeleton-shimmer" style={{ width: "42px", height: "13px", borderRadius: "4px" }} />
+                      </div>
+                    ) : (
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        background: "rgba(255, 255, 255, 0.05)",
+                        border: "1px solid var(--border-subtle)",
+                        padding: "4px 10px",
+                        borderRadius: "9999px",
+                        fontSize: "12px",
+                        color: "var(--text-secondary)"
+                      }}>
+                        <Globe size={13} style={{ color: "var(--apple-cyan)" }} />
+                        <span>
+                          1 {stock?.currency || "USD"} ={" "}
+                          <strong style={{ color: "#ffffff" }}>
+                            ₹{Number(stock?.fxRate || stock?.usdInrRate).toFixed(2)}
+                          </strong>
+                        </span>
+                      </div>
+                    )
                   )}
 
                   {/* Connect AI Live status pill / button */}
