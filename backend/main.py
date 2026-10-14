@@ -10,6 +10,7 @@ import uvicorn
 import yfinance as yf
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from prophet import Prophet
 
@@ -46,6 +47,229 @@ def get_live_usd_inr():
     except Exception:
         pass
     return 84.00
+
+
+@app.get("/", response_class=HTMLResponse)
+def root_status_page():
+    """Returns a sleek Apple Cupertino dark-mode status landing page."""
+    usd_inr = get_live_usd_inr()
+    return f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ArthaX 2.0 • API Status</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <style>
+            * {{
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+                -webkit-font-smoothing: antialiased;
+            }}
+            body {{
+                font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif;
+                background-color: #07080a;
+                color: #f5f5f7;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 24px;
+                position: relative;
+                overflow: hidden;
+            }}
+            /* Ambient radial glows */
+            body::before {{
+                content: "";
+                position: absolute;
+                top: -150px;
+                left: 20%;
+                width: 500px;
+                height: 500px;
+                background: radial-gradient(circle, rgba(10, 132, 255, 0.12) 0%, rgba(0,0,0,0) 70%);
+                pointer-events: none;
+            }}
+            body::after {{
+                content: "";
+                position: absolute;
+                bottom: -150px;
+                right: 20%;
+                width: 500px;
+                height: 500px;
+                background: radial-gradient(circle, rgba(48, 209, 88, 0.08) 0%, rgba(0,0,0,0) 70%);
+                pointer-events: none;
+            }}
+            .card {{
+                position: relative;
+                z-index: 1;
+                max-width: 540px;
+                width: 100%;
+                background: rgba(18, 20, 26, 0.75);
+                backdrop-filter: blur(30px) saturate(190%);
+                -webkit-backdrop-filter: blur(30px) saturate(190%);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 24px;
+                padding: 36px 32px;
+                box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+                text-align: center;
+            }}
+            .badge-pulse {{
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 6px 14px;
+                border-radius: 9999px;
+                background: rgba(48, 209, 88, 0.1);
+                border: 1px solid rgba(48, 209, 88, 0.25);
+                color: #30d158;
+                font-size: 13px;
+                font-weight: 600;
+                margin-bottom: 20px;
+            }}
+            .dot {{
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: #30d158;
+                box-shadow: 0 0 12px #30d158;
+                animation: pulse 2s infinite ease-in-out;
+            }}
+            @keyframes pulse {{
+                0% {{ transform: scale(0.9); opacity: 0.7; }}
+                50% {{ transform: scale(1.15); opacity: 1; }}
+                100% {{ transform: scale(0.9); opacity: 0.7; }}
+            }}
+            h1 {{
+                font-size: 28px;
+                font-weight: 700;
+                letter-spacing: -0.02em;
+                margin-bottom: 8px;
+                background: linear-gradient(180deg, #ffffff 0%, #a1a1aa 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }}
+            p.subtitle {{
+                font-size: 14px;
+                color: #86868b;
+                line-height: 1.5;
+                margin-bottom: 28px;
+            }}
+            .grid {{
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+                margin-bottom: 28px;
+                text-align: left;
+            }}
+            .tile {{
+                background: rgba(255, 255, 255, 0.04);
+                border: 1px solid rgba(255, 255, 255, 0.06);
+                border-radius: 14px;
+                padding: 14px 16px;
+            }}
+            .tile-label {{
+                font-size: 11px;
+                color: #86868b;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin-bottom: 4px;
+            }}
+            .tile-val {{
+                font-size: 15px;
+                font-weight: 600;
+                color: #ffffff;
+            }}
+            .actions {{
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }}
+            .btn {{
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                padding: 12px 20px;
+                border-radius: 12px;
+                font-size: 14px;
+                font-weight: 600;
+                text-decoration: none;
+                transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+                user-select: none;
+            }}
+            .btn-primary {{
+                background: linear-gradient(180deg, #0a84ff 0%, #0066cc 100%);
+                color: #ffffff;
+                box-shadow: 0 4px 16px rgba(10, 132, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+            }}
+            .btn-primary:hover {{
+                transform: translateY(-1px);
+                background: linear-gradient(180deg, #2191ff 0%, #0a84ff 100%);
+            }}
+            .btn-secondary {{
+                background: rgba(255, 255, 255, 0.06);
+                color: #f5f5f7;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }}
+            .btn-secondary:hover {{
+                background: rgba(255, 255, 255, 0.12);
+                border-color: rgba(255, 255, 255, 0.2);
+            }}
+            .footer {{
+                margin-top: 24px;
+                font-size: 11px;
+                color: #515156;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <div class="badge-pulse">
+                <div class="dot"></div>
+                <span>ArthaX AI Engine is Live</span>
+            </div>
+
+            <h1>ArthaX Intelligence Backend</h1>
+            <p class="subtitle">High-performance financial time-series forecasting, live Yahoo Finance data streaming, and real-time forex valuation API.</p>
+
+            <div class="grid">
+                <div class="tile">
+                    <div class="tile-label">AI Model</div>
+                    <div class="tile-val">Meta Prophet Active</div>
+                </div>
+                <div class="tile">
+                    <div class="tile-label">USD / INR Rate</div>
+                    <div class="tile-val">₹{usd_inr:.2f}</div>
+                </div>
+                <div class="tile">
+                    <div class="tile-label">Status</div>
+                    <div class="tile-val" style="color: #30d158;">Operational</div>
+                </div>
+                <div class="tile">
+                    <div class="tile-label">Version</div>
+                    <div class="tile-val">2.0.0 Production</div>
+                </div>
+            </div>
+
+            <div class="actions">
+                <a href="https://astragenx-arthax.vercel.app/" class="btn btn-primary" target="_blank">
+                    🚀 Launch ArthaX Web App
+                </a>
+                <a href="/docs" class="btn btn-secondary">
+                    📖 Explore Swagger API Docs
+                </a>
+            </div>
+
+            <div class="footer">
+                AstraGenX Intelligence • Powered by Meta Prophet & Yahoo Finance
+            </div>
+        </div>
+    </body>
+    </html>
+    """
 
 
 @app.get("/api/health")
