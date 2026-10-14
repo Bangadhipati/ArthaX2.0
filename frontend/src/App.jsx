@@ -6,6 +6,7 @@ import RangeAndDepthControls from "./components/RangeAndDepthControls";
 import MetricsGrid from "./components/MetricsGrid";
 import IntelligenceCard from "./components/IntelligenceCard";
 import Sidebar from "./components/Sidebar";
+import ComingSoonPage from "./components/ComingSoonPage";
 import { fetchStockData, fetchForecastData, checkBackendHealth } from "./api";
 import { POPULAR_TICKERS } from "./mockData";
 import { Zap, Loader2, Sparkles, TrendingUp, ShieldCheck, LineChart } from "lucide-react";
@@ -115,7 +116,14 @@ export default function App() {
 
         {/* Main Content Area (Shifted to right on big screens) */}
         <main className="app-main-content">
-          {aiStatus === "live" ? (
+          {activePage !== "market-intelligence" ? (
+            <ComingSoonPage
+              pageId={activePage}
+              onBackToIntelligence={() => setActivePage("market-intelligence")}
+            />
+          ) : (
+            <>
+              {aiStatus === "live" ? (
           <>
             {/* Apple Quick Ticker Tape */}
             <div style={{
@@ -298,6 +306,8 @@ export default function App() {
             </div>
           </div>
         )}
+            </>
+          )}
       </main>
       </div>
 
