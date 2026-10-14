@@ -118,11 +118,11 @@ export default function App() {
               alignItems: "center",
               gap: "8px",
               overflowX: "auto",
-              paddingBottom: "16px",
-              marginBottom: "16px",
+              padding: "8px 4px 14px 4px",
+              marginBottom: "12px",
               scrollbarWidth: "none"
             }}>
-              <span style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-tertiary)", letterSpacing: "0.05em", marginRight: "4px" }}>
+              <span style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-tertiary)", letterSpacing: "0.05em", marginRight: "4px", flexShrink: 0 }}>
                 Quick Watch:
               </span>
               {POPULAR_TICKERS.map((item) => (
@@ -133,7 +133,8 @@ export default function App() {
                   style={{
                     padding: "5px 12px",
                     fontSize: "12px",
-                    whiteSpace: "nowrap"
+                    whiteSpace: "nowrap",
+                    flexShrink: 0
                   }}
                 >
                   <span>{item.symbol}</span>

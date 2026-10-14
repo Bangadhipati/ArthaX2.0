@@ -122,7 +122,7 @@ export default function HeroTicker({
           style={activeView === "forecast" ? { color: "var(--apple-gold)" } : {}}
         >
           <Sparkles size={15} style={{ color: "var(--apple-gold)" }} />
-          <span>AI Prophet Projection</span>
+          <span>AI Projection</span>
         </button>
       </div>
     </div>
