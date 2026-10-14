@@ -28,7 +28,7 @@ export default function IntelligenceCard({ stock, forecast }) {
           </div>
           <div>
             <h3 style={{ fontSize: "clamp(14px, 3.8vw, 16px)", fontWeight: 700, color: "#ffffff", letterSpacing: "-0.01em" }}>
-              AstraGenX Prophet Intelligence
+              AstraGenX AI Intelligence
             </h3>
             <p style={{ fontSize: "11.5px", color: "var(--text-secondary)", margin: 0 }}>
               Non-linear additive time-series decomposition modeling
@@ -57,7 +57,7 @@ export default function IntelligenceCard({ stock, forecast }) {
       {/* Intelligence Insights Summary */}
       <div className="intelligence-body">
         <p style={{ marginBottom: "8px" }}>
-          Meta's Prophet engine has processed historical price patterns for <strong>{stock.symbol}</strong>, stripping out market seasonality, weekend volatility, and structural macroeconomic trend shifts.
+          Our advanced predictive neural engine has processed historical price patterns for <strong>{stock.symbol}</strong>, stripping out market seasonality, weekend volatility, and structural macroeconomic trend shifts.
         </p>
         <ul style={{ paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "6px" }}>
           <li>

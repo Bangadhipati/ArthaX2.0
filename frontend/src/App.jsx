@@ -350,7 +350,7 @@ export default function App() {
               Connecting to AI Engine...
             </h2>
             <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.6, maxWidth: "480px", margin: "0 auto 24px" }}>
-              Waking up the Python backend server and establishing real-time connections to Global Market Feeds and Meta Prophet.
+              Waking up the Python backend server and establishing real-time connections to Global Market Feeds and the Predictive AI Engine.
             </p>
             <div style={{
               display: "inline-flex",
@@ -393,7 +393,7 @@ export default function App() {
               AstraGenX Market Intelligence
             </h2>
             <p style={{ fontSize: "15px", color: "var(--text-secondary)", lineHeight: 1.6, maxWidth: "520px", margin: "0 auto 28px" }}>
-              Connect to the live AI engine to stream verified candlestick history, live USD/INR exchange rates, and Meta Prophet Bayesian predictive forecasts.
+              Connect to the live AI engine to stream verified candlestick history, live USD/INR exchange rates, and Advanced Bayesian AI predictive forecasts.
             </p>
 
             <button

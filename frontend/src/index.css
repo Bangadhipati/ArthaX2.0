@@ -981,7 +981,7 @@ input[type="range"].cupertino-slider::-webkit-slider-thumb:hover {
 
 @media (max-width: 640px) {
   .stock-chart-wrapper {
-    padding: 12px 6px 4px;
+    padding: 12px 10px 4px 6px;
   }
   .stock-chart-container {
     height: 285px;
@@ -1006,6 +1006,9 @@ input[type="range"].cupertino-slider::-webkit-slider-thumb:hover {
 }
 
 @media (max-width: 400px) {
+  .stock-chart-wrapper {
+    padding: 10px 8px 4px 4px;
+  }
   .stock-chart-container {
     height: 260px;
   }

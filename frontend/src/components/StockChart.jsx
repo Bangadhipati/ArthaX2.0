@@ -101,6 +101,18 @@ export default function StockChart({
   const pinchStartDistRef = useRef(0);
   const rafIdRef = useRef(null);
 
+  const [isSmallScreen, setIsSmallScreen] = useState(
+    typeof window !== "undefined" ? window.innerWidth <= 768 : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsSmallScreen(window.innerWidth <= 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const conversionRate = Number(fxRate || usdInrRate) || 84.10;
   const isPositive = stockChange >= 0;
   const currSymbol = currency === "INR" ? "₹" : (currency === "USD" ? "$" : `${currency} `);
@@ -434,18 +446,7 @@ export default function StockChart({
         )}
       </div>
 
-      {/* Floating Status / Hint Badges */}
-      {isPanMode ? (
-        <div className="chart-pan-badge active-pan-mode">
-          <Hand size={11} style={{ color: "#38bdf8" }} />
-          <span>Pan Active: Drag with mouse or finger</span>
-          <button onClick={handleTogglePan} className="chart-pan-badge-exit" aria-label="Exit Pan Mode">✕ Exit</button>
-        </div>
-      ) : zoomIndex > 0 ? (
-        <div className="chart-pan-badge">
-          <span>↔ Drag to explore • Scroll to zoom</span>
-        </div>
-      ) : null}
+      {/* Chart Canvas */}
 
       {activeView === "historical" && chartType === "candle" ? (
         <CandlestickChart
@@ -461,7 +462,10 @@ export default function StockChart({
       ) : (
         <ResponsiveContainer width="100%" height="100%">
           {activeView === "historical" ? (
-            <AreaChart data={visibleHistoryData} margin={{ top: 18, right: 4, left: -8, bottom: 0 }}>
+            <AreaChart
+              data={visibleHistoryData}
+              margin={{ top: 18, right: 8, left: isSmallScreen ? -16 : -10, bottom: 0 }}
+            >
               <defs>
                 <linearGradient id="historicalGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop
@@ -489,7 +493,7 @@ export default function StockChart({
                 domain={domain}
                 stroke="#515156"
                 fontSize={10}
-                width={46}
+                width={50}
                 tickLine={false}
                 axisLine={false}
                 orientation="right"
@@ -511,9 +515,12 @@ export default function StockChart({
               />
             </AreaChart>
           ) : (
-            <AreaChart data={formattedForecastData} margin={{ top: 22, right: 4, left: -8, bottom: 0 }}>
+            <AreaChart
+              data={formattedForecastData}
+              margin={{ top: 22, right: 8, left: isSmallScreen ? -16 : -10, bottom: 0 }}
+            >
               <defs>
-                {/* Golden Prophet Confidence Corridor */}
+                {/* Golden AI Confidence Corridor */}
                 <linearGradient id="confidenceGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#ffd60a" stopOpacity={0.22} />
                   <stop offset="100%" stopColor="#ffd60a" stopOpacity={0.05} />
@@ -532,7 +539,7 @@ export default function StockChart({
                 domain={domain}
                 stroke="#515156"
                 fontSize={10}
-                width={46}
+                width={50}
                 tickLine={false}
                 axisLine={false}
                 orientation="right"
@@ -642,7 +649,7 @@ function CandlestickChart({ data, domain, currSymbol, currency, conversionRate, 
     return <div ref={containerRef} style={{ width: "100%", height: "100%" }} />;
   }
 
-  const margin = { top: 18, right: 46, bottom: 24, left: 6 };
+  const margin = { top: 18, right: 52, bottom: 24, left: 6 };
   const innerWidth = Math.max(10, width - margin.left - margin.right);
   const innerHeight = Math.max(10, height - margin.top - margin.bottom);
 
@@ -721,12 +728,12 @@ function CandlestickChart({ data, domain, currSymbol, currency, conversionRate, 
               strokeDasharray="3 3"
             />
             <text
-              x={width - margin.right + 6}
+              x={width - 6}
               y={t.y + 3}
               fill="#515156"
               fontSize={10}
               fontFamily="var(--font-sans)"
-              textAnchor="start"
+              textAnchor="end"
             >
               {currSymbol}{Math.round(t.val)}
             </text>
