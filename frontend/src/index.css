@@ -636,6 +636,66 @@ input[type="range"].cupertino-slider::-webkit-slider-thumb:hover {
   pointer-events: none;
 }
 
+/* Historical Chart Type Toggle (Area vs Candlesticks) */
+.chart-type-segmented {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(18, 20, 26, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 3px;
+  border-radius: 9999px;
+  border: 1px solid var(--border-subtle);
+  z-index: 10;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+.chart-type-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  outline: none;
+  line-height: 1;
+}
+
+.chart-type-btn:hover {
+  color: #ffffff;
+}
+
+.chart-type-btn.active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .chart-type-segmented {
+    top: 6px;
+    left: 6px;
+    padding: 2px;
+  }
+  .chart-type-btn {
+    padding: 3px 7px;
+    font-size: 10px;
+    gap: 3px;
+  }
+}
+
 /* Floating Chart Zoom Controls */
 .chart-zoom-controls {
   position: absolute;
@@ -700,6 +760,31 @@ input[type="range"].cupertino-slider::-webkit-slider-thumb:hover {
     padding: 3px 5px;
     font-size: 10px;
   }
+}
+
+/* Floating Pan / Drag Hint Badge */
+.chart-pan-badge {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(18, 20, 26, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-subtle);
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 10px;
+  color: var(--text-secondary);
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  animation: fadeIn 0.2s ease;
+  user-select: none;
+  white-space: nowrap;
 }
 
 @media (max-width: 1023px) {

@@ -280,6 +280,7 @@ export default function App() {
                   forecastData={forecast?.timeline || []}
                   currency={stock?.currency || "USD"}
                   stockChange={stock?.change || 0}
+                  usdInrRate={stock?.usdInrRate || 84.10}
                 />
               </div>
 
