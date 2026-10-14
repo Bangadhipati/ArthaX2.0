@@ -10,9 +10,9 @@ export default function IntelligenceCard({ stock, forecast }) {
   const isPositive = growth >= 0;
 
   return (
-    <div className="apple-glass" style={{ marginTop: "24px", padding: "24px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginBottom: "16px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+    <div className="apple-glass intelligence-card-wrapper">
+      <div className="intelligence-header">
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
           <div style={{
             width: "32px",
             height: "32px",
@@ -21,15 +21,16 @@ export default function IntelligenceCard({ stock, forecast }) {
             color: "#000000",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center"
+            justifyContent: "center",
+            flexShrink: 0
           }}>
-            <Sparkles size={17} strokeWidth={2.4} />
+            <Sparkles size={16} strokeWidth={2.4} />
           </div>
           <div>
-            <h3 style={{ fontSize: "16px", fontWeight: 700, color: "#ffffff", letterSpacing: "-0.01em" }}>
+            <h3 style={{ fontSize: "clamp(14px, 3.8vw, 16px)", fontWeight: 700, color: "#ffffff", letterSpacing: "-0.01em" }}>
               AstraGenX Prophet Intelligence
             </h3>
-            <p style={{ fontSize: "12px", color: "var(--text-secondary)", margin: 0 }}>
+            <p style={{ fontSize: "11.5px", color: "var(--text-secondary)", margin: 0 }}>
               Non-linear additive time-series decomposition modeling
             </p>
           </div>
@@ -37,31 +38,24 @@ export default function IntelligenceCard({ stock, forecast }) {
 
         {/* Sentiment Badge */}
         <div style={{
-          display: "flex",
+          display: "inline-flex",
           alignItems: "center",
           gap: "6px",
-          padding: "6px 14px",
+          padding: "5px 12px",
           borderRadius: "9999px",
           background: isPositive ? "rgba(48, 209, 88, 0.12)" : "rgba(255, 69, 58, 0.12)",
           border: `1px solid ${isPositive ? "rgba(48, 209, 88, 0.3)" : "rgba(255, 69, 58, 0.3)"}`,
-          fontSize: "13px",
+          fontSize: "12px",
           fontWeight: 600,
-          color: isPositive ? "var(--apple-green)" : "var(--apple-red)"
+          color: isPositive ? "var(--apple-green)" : "var(--apple-red)",
+          whiteSpace: "nowrap"
         }}>
           <span>{sentiment} Outlook</span>
         </div>
       </div>
 
       {/* Intelligence Insights Summary */}
-      <div style={{
-        background: "rgba(255, 255, 255, 0.03)",
-        border: "1px solid rgba(255, 255, 255, 0.06)",
-        borderRadius: "14px",
-        padding: "16px",
-        fontSize: "13px",
-        lineHeight: "1.6",
-        color: "#d1d5db"
-      }}>
+      <div className="intelligence-body">
         <p style={{ marginBottom: "8px" }}>
           Meta's Prophet engine has processed historical price patterns for <strong>{stock.symbol}</strong>, stripping out market seasonality, weekend volatility, and structural macroeconomic trend shifts.
         </p>

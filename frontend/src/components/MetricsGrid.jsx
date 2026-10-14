@@ -21,16 +21,11 @@ export default function MetricsGrid({ stock, forecast }) {
   const isGrowthPositive = (growth || 0) >= 0;
 
   return (
-    <div style={{
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 250px), 1fr))",
-      gap: "16px",
-      marginTop: "24px"
-    }}>
+    <div className="metrics-grid">
       {/* Card 1: AI Price Target */}
-      <div className="apple-glass" style={{ padding: "20px" }}>
+      <div className="apple-glass metric-card">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-          <span style={{ fontSize: "12px", color: "var(--text-secondary)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+          <span style={{ fontSize: "11px", color: "var(--text-secondary)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
             AI Target ({years}Y)
           </span>
           <div style={{
@@ -47,7 +42,7 @@ export default function MetricsGrid({ stock, forecast }) {
           </div>
         </div>
 
-        <div style={{ fontSize: "28px", fontWeight: 700, color: "#ffffff", letterSpacing: "-0.02em" }}>
+        <div style={{ fontSize: "clamp(24px, 5.5vw, 28px)", fontWeight: 700, color: "#ffffff", letterSpacing: "-0.02em" }}>
           {currencySymbol}{projectedPrice?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
 
@@ -57,27 +52,28 @@ export default function MetricsGrid({ stock, forecast }) {
           </div>
         )}
 
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "12px", flexWrap: "wrap" }}>
           <span style={{
-            fontSize: "12px",
+            fontSize: "11px",
             fontWeight: 600,
             padding: "2px 8px",
             borderRadius: "6px",
             background: isGrowthPositive ? "var(--apple-green-glow)" : "var(--apple-red-glow)",
-            color: isGrowthPositive ? "var(--apple-green)" : "var(--apple-red)"
+            color: isGrowthPositive ? "var(--apple-green)" : "var(--apple-red)",
+            whiteSpace: "nowrap"
           }}>
             {isGrowthPositive ? "+" : ""}{growth?.toFixed(2)}% ROI
           </span>
-          <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+          <span style={{ fontSize: "11px", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>
             CAGR: {cagr?.toFixed(2)}%
           </span>
         </div>
       </div>
 
       {/* Card 2: 52-Week Range Gauge */}
-      <div className="apple-glass" style={{ padding: "20px" }}>
+      <div className="apple-glass metric-card">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-          <span style={{ fontSize: "12px", color: "var(--text-secondary)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+          <span style={{ fontSize: "11px", color: "var(--text-secondary)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
             52-Week Price Range
           </span>
           <div style={{
@@ -102,6 +98,8 @@ export default function MetricsGrid({ stock, forecast }) {
           borderRadius: "9999px",
           marginTop: "16px",
           marginBottom: "12px",
+          marginRight: "4px",
+          marginLeft: "4px",
           overflow: "visible"
         }}>
           <div style={{
@@ -125,17 +123,24 @@ export default function MetricsGrid({ stock, forecast }) {
           }} />
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "var(--text-secondary)" }}>
-          <span>Low: {currencySymbol}{low}</span>
-          <span style={{ color: "#ffffff", fontWeight: 600 }}>Cur: {currencySymbol}{current}</span>
-          <span>High: {currencySymbol}{high}</span>
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          fontSize: "clamp(10px, 2.7vw, 12px)",
+          color: "var(--text-secondary)",
+          gap: "4px"
+        }}>
+          <span style={{ whiteSpace: "nowrap" }}>Low: {currencySymbol}{low}</span>
+          <span style={{ color: "#ffffff", fontWeight: 600, whiteSpace: "nowrap" }}>Cur: {currencySymbol}{current}</span>
+          <span style={{ whiteSpace: "nowrap" }}>High: {currencySymbol}{high}</span>
         </div>
       </div>
 
       {/* Card 3: Key Fundamentals */}
-      <div className="apple-glass" style={{ padding: "20px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-          <span style={{ fontSize: "12px", color: "var(--text-secondary)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+      <div className="apple-glass metric-card">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+          <span style={{ fontSize: "11px", color: "var(--text-secondary)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
             Valuation & Fundamentals
           </span>
           <div style={{
@@ -153,25 +158,25 @@ export default function MetricsGrid({ stock, forecast }) {
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
-          <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>Market Cap</span>
-          <span style={{ fontSize: "13px", fontWeight: 600, color: "#ffffff" }}>{stock.marketCap || "N/A"}</span>
+          <span style={{ fontSize: "12.5px", color: "var(--text-secondary)" }}>Market Cap</span>
+          <span style={{ fontSize: "12.5px", fontWeight: 600, color: "#ffffff" }}>{stock.marketCap || "N/A"}</span>
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
-          <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>24h Volume</span>
-          <span style={{ fontSize: "13px", fontWeight: 600, color: "#ffffff" }}>{stock.volume || "N/A"}</span>
+          <span style={{ fontSize: "12.5px", color: "var(--text-secondary)" }}>24h Volume</span>
+          <span style={{ fontSize: "12.5px", fontWeight: 600, color: "#ffffff" }}>{stock.volume || "N/A"}</span>
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0" }}>
-          <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>P/E Ratio</span>
-          <span style={{ fontSize: "13px", fontWeight: 600, color: "#ffffff" }}>{stock.peRatio ? `${stock.peRatio}x` : "N/A"}</span>
+          <span style={{ fontSize: "12.5px", color: "var(--text-secondary)" }}>P/E Ratio</span>
+          <span style={{ fontSize: "12.5px", fontWeight: 600, color: "#ffffff" }}>{stock.peRatio ? `${stock.peRatio}x` : "N/A"}</span>
         </div>
       </div>
 
       {/* Card 4: Currency & Real-time FX Conversion */}
-      <div className="apple-glass" style={{ padding: "20px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-          <span style={{ fontSize: "12px", color: "var(--text-secondary)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+      <div className="apple-glass metric-card">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+          <span style={{ fontSize: "11px", color: "var(--text-secondary)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
             Currency & FX Intelligence
           </span>
           <div style={{
@@ -188,19 +193,20 @@ export default function MetricsGrid({ stock, forecast }) {
           </div>
         </div>
 
-        <div style={{ fontSize: "14px", color: "#ffffff", fontWeight: 600, marginBottom: "4px" }}>
+        <div style={{ fontSize: "13.5px", color: "#ffffff", fontWeight: 600, marginBottom: "4px" }}>
           Asset Native: {stock.currency}
         </div>
-        <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "12px" }}>
-          Converted in real time to INR via Yahoo Finance FX stream.
+        <div style={{ fontSize: "11.5px", color: "var(--text-secondary)", marginBottom: "10px" }}>
+          Converted in real time to INR via live Yahoo FX stream.
         </div>
 
         <div style={{
-          padding: "8px 12px",
-          borderRadius: "10px",
+          padding: "7px 12px",
+          borderRadius: "8px",
           background: "rgba(255, 255, 255, 0.04)",
           fontSize: "12px",
-          color: "var(--apple-cyan)"
+          color: "var(--apple-cyan)",
+          fontWeight: 500
         }}>
           1 USD = ₹{stock.usdInrRate || "84.10"}
         </div>

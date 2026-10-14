@@ -126,16 +126,7 @@ export default function App() {
               {aiStatus === "live" ? (
           <>
             {/* Top Sub-Header Bar (Attached to right of sidebar, above Quick Watch) */}
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "12px",
-              marginBottom: "16px",
-              paddingBottom: "12px",
-              borderBottom: "1px solid var(--border-subtle)"
-            }}>
+            <div className="market-sub-header">
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <span style={{
                   fontSize: "13px",
@@ -158,7 +149,7 @@ export default function App() {
               </div>
 
               {/* Dollar INR currency exchange value and beside it Connect AI Live stuff */}
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+              <div className="market-status-group">
                 {/* Dollar INR currency exchange value */}
                 <div style={{
                   display: "flex",
@@ -166,7 +157,7 @@ export default function App() {
                   gap: "6px",
                   background: "rgba(255, 255, 255, 0.05)",
                   border: "1px solid var(--border-subtle)",
-                  padding: "5px 12px",
+                  padding: "4px 10px",
                   borderRadius: "9999px",
                   fontSize: "12px",
                   color: "var(--text-secondary)"
@@ -183,7 +174,7 @@ export default function App() {
                     gap: "7px",
                     background: "rgba(48, 209, 88, 0.12)",
                     border: "1px solid rgba(48, 209, 88, 0.3)",
-                    padding: "5px 12px",
+                    padding: "4px 10px",
                     borderRadius: "9999px",
                     fontSize: "12px",
                     fontWeight: 600,
@@ -208,21 +199,21 @@ export default function App() {
                     gap: "8px",
                     background: "rgba(255, 214, 10, 0.12)",
                     border: "1px solid rgba(255, 214, 10, 0.3)",
-                    padding: "5px 12px",
+                    padding: "4px 10px",
                     borderRadius: "9999px",
                     fontSize: "12px",
                     fontWeight: 600,
                     color: "var(--apple-gold)"
                   }}>
                     <Loader2 size={13} className="spin-animation" style={{ color: "var(--apple-gold)" }} />
-                    <span>Connecting to AI...</span>
+                    <span>Connecting...</span>
                   </div>
                 ) : (
                   <button
                     onClick={handleConnectAI}
                     className="apple-button apple-button-primary"
                     style={{
-                      padding: "5px 14px",
+                      padding: "4px 12px",
                       fontSize: "12px",
                       fontWeight: 600
                     }}
@@ -235,15 +226,7 @@ export default function App() {
             </div>
 
             {/* Apple Quick Ticker Tape */}
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              overflowX: "auto",
-              padding: "8px 4px 14px 4px",
-              marginBottom: "12px",
-              scrollbarWidth: "none"
-            }}>
+            <div className="quick-watch-tape">
               <span style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-tertiary)", letterSpacing: "0.05em", marginRight: "4px", flexShrink: 0 }}>
                 Quick Watch:
               </span>
@@ -253,8 +236,8 @@ export default function App() {
                   onClick={() => handleSelectTicker(item.symbol)}
                   className={`apple-button ${ticker === item.symbol ? "apple-button-primary" : ""}`}
                   style={{
-                    padding: "5px 12px",
-                    fontSize: "12px",
+                    padding: "4px 10px",
+                    fontSize: "11.5px",
                     whiteSpace: "nowrap",
                     flexShrink: 0
                   }}
@@ -290,7 +273,7 @@ export default function App() {
                 </div>
               )}
 
-              <div style={{ padding: "16px 16px 6px" }}>
+              <div className="stock-chart-wrapper">
                 <StockChart
                   activeView={activeView}
                   historyData={stock?.history || []}

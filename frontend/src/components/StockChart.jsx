@@ -51,7 +51,7 @@ export default function StockChart({
     <div className="stock-chart-container">
       <ResponsiveContainer width="100%" height="100%">
         {activeView === "historical" ? (
-          <AreaChart data={historyData} margin={{ top: 20, right: 10, left: 10, bottom: 0 }}>
+          <AreaChart data={historyData} margin={{ top: 18, right: 4, left: -8, bottom: 0 }}>
             <defs>
               <linearGradient id="historicalGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop
@@ -69,19 +69,20 @@ export default function StockChart({
             <XAxis
               dataKey="date"
               stroke="#515156"
-              fontSize={11}
+              fontSize={10}
               tickLine={false}
               axisLine={false}
               tickFormatter={(d) => {
                 const parts = d.split("-");
                 return `${parts[1]}/${parts[2] || ""}`;
               }}
-              minTickGap={40}
+              minTickGap={35}
             />
             <YAxis
               domain={domain}
               stroke="#515156"
-              fontSize={11}
+              fontSize={10}
+              width={46}
               tickLine={false}
               axisLine={false}
               orientation="right"
@@ -101,7 +102,7 @@ export default function StockChart({
             />
           </AreaChart>
         ) : (
-          <AreaChart data={forecastData} margin={{ top: 20, right: 10, left: 10, bottom: 0 }}>
+          <AreaChart data={forecastData} margin={{ top: 22, right: 4, left: -8, bottom: 0 }}>
             <defs>
               {/* Golden Prophet Confidence Corridor */}
               <linearGradient id="confidenceGradient" x1="0" y1="0" x2="0" y2="1">
@@ -112,19 +113,20 @@ export default function StockChart({
             <XAxis
               dataKey="date"
               stroke="#515156"
-              fontSize={11}
+              fontSize={10}
               tickLine={false}
               axisLine={false}
               tickFormatter={(d) => {
                 const parts = d.split("-");
                 return `${parts[0].slice(2)}/${parts[1]}`;
               }}
-              minTickGap={45}
+              minTickGap={40}
             />
             <YAxis
               domain={domain}
               stroke="#515156"
-              fontSize={11}
+              fontSize={10}
+              width={46}
               tickLine={false}
               axisLine={false}
               orientation="right"
@@ -164,30 +166,17 @@ export default function StockChart({
 
       {/* Legend Badge for Forecast View */}
       {activeView === "forecast" && (
-        <div style={{
-          position: "absolute",
-          top: "10px",
-          left: "14px",
-          display: "flex",
-          alignItems: "center",
-          gap: "16px",
-          background: "rgba(18, 20, 26, 0.8)",
-          backdropFilter: "blur(12px)",
-          padding: "6px 14px",
-          borderRadius: "9999px",
-          border: "1px solid var(--border-subtle)",
-          fontSize: "12px"
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ width: "10px", height: "3px", background: "#38bdf8", borderRadius: "2px" }} />
+        <div className="chart-forecast-legend">
+          <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+            <span style={{ width: "8px", height: "3px", background: "#38bdf8", borderRadius: "2px" }} />
             <span style={{ color: "var(--text-secondary)" }}>Historical</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ width: "10px", height: "3px", background: "#ffd60a", borderRadius: "2px" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+            <span style={{ width: "8px", height: "3px", background: "#ffd60a", borderRadius: "2px" }} />
             <span style={{ color: "#ffd60a", fontWeight: 500 }}>Prophet Trajectory</span>
           </div>
-          <div className="hide-on-mobile" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ width: "10px", height: "8px", background: "rgba(255, 214, 10, 0.25)", borderRadius: "2px" }} />
+          <div className="hide-on-mobile" style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+            <span style={{ width: "8px", height: "8px", background: "rgba(255, 214, 10, 0.25)", borderRadius: "2px" }} />
             <span style={{ color: "var(--text-secondary)" }}>95% Confidence Interval</span>
           </div>
         </div>

@@ -413,28 +413,364 @@ input[type="range"].cupertino-slider::-webkit-slider-thumb:hover {
 
 @media (max-width: 1023px) {
   .app-main-content {
-    padding: 20px 16px 40px;
+    padding: 20px 18px 40px;
     margin: 0 auto;
     max-width: 100%;
   }
 }
 
-/* Responsive UI Helpers */
+@media (max-width: 640px) {
+  .app-main-content {
+    padding: 14px 12px 36px;
+  }
+}
+
+/* =========================================================
+   Market Intelligence Responsive Design System
+   ========================================================= */
+
+/* Sub-Header & Live Status Bar */
+.market-sub-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.market-status-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .market-sub-header {
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    gap: 8px;
+  }
+  .market-status-group {
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+  }
+}
+
+/* Quick Watch Ticker Tape */
+.quick-watch-tape {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 12px 2px;
+  margin-bottom: 12px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.quick-watch-tape::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hero Ticker & Present Value Data */
+.hero-ticker-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.hero-ticker-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.hero-symbol {
+  font-size: clamp(22px, 5.5vw, 28px);
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.hero-name {
+  font-size: clamp(12px, 3.2vw, 14px);
+  color: var(--text-secondary);
+  font-weight: 400;
+  max-width: clamp(130px, 45vw, 300px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.hero-exchange {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.hero-price-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.hero-price {
+  font-size: clamp(28px, 7.5vw, 42px);
+  font-weight: 700;
+  font-family: var(--font-sans);
+  letter-spacing: -0.03em;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.hero-fx-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  font-size: clamp(12px, 3vw, 14px);
+  font-weight: 500;
+  color: #d1d5db;
+  white-space: nowrap;
+}
+
+.hero-change-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: clamp(11px, 2.8vw, 13px);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.hero-change-diff {
+  opacity: 0.8;
+  font-size: 0.9em;
+  margin-left: 2px;
+}
+
+.hero-segmented-switcher {
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .hero-ticker-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .hero-segmented-switcher {
+    width: 100%;
+    display: flex;
+  }
+  .hero-segmented-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+  }
+}
+
+/* Stock Chart Container */
+.stock-chart-wrapper {
+  padding: 16px 16px 6px;
+}
+
 .stock-chart-container {
   width: 100%;
   height: 380px;
   position: relative;
 }
 
-@media (max-width: 640px) {
+.chart-forecast-legend {
+  position: absolute;
+  top: 10px;
+  left: 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(18, 20, 26, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding: 5px 12px;
+  border-radius: 9999px;
+  border: 1px solid var(--border-subtle);
+  font-size: 11px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+@media (max-width: 1023px) {
   .stock-chart-container {
-    height: 290px;
+    height: 330px;
   }
-  .hide-on-mobile {
-    display: none !important;
+}
+
+@media (max-width: 640px) {
+  .stock-chart-wrapper {
+    padding: 12px 6px 4px;
   }
-  .nav-header-padding {
-    padding: 0 14px !important;
+  .stock-chart-container {
+    height: 275px;
+  }
+  .chart-forecast-legend {
+    top: 6px;
+    left: 8px;
+    padding: 3px 8px;
+    gap: 8px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 400px) {
+  .stock-chart-container {
+    height: 250px;
+  }
+}
+
+/* Range & Depth Controls Bar */
+.chart-controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-subtle);
+  background: rgba(10, 11, 15, 0.45);
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+}
+
+.timeframe-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.timeframe-segmented-control {
+  display: inline-flex;
+}
+
+.timeframe-btn {
+  text-transform: uppercase;
+}
+
+@media (max-width: 640px) {
+  .chart-controls-bar {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  .timeframe-group {
+    width: 100%;
+  }
+  .timeframe-segmented-control {
+    width: 100%;
+    display: flex;
+  }
+  .timeframe-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 6px 0 !important;
+    font-size: 11px !important;
+  }
+  .horizon-group {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* Information Cards: Metrics Grid */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.metric-card {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+@media (max-width: 1200px) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .metric-card {
+    padding: 16px;
+  }
+}
+
+/* Information Cards: AstraGenX Prophet Intelligence Card */
+.intelligence-card-wrapper {
+  margin-top: 24px;
+  padding: 24px;
+}
+
+.intelligence-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.intelligence-body {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 16px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #d1d5db;
+}
+
+@media (max-width: 640px) {
+  .intelligence-card-wrapper {
+    margin-top: 16px;
+    padding: 16px;
+  }
+  .intelligence-body {
+    padding: 13px;
+    font-size: 12.5px;
   }
 }
 
