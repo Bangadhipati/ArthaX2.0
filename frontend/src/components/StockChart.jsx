@@ -129,12 +129,12 @@ export default function StockChart({
   const activeDataset = activeView === "historical" ? historyData : currentAndFutureForecast;
   const totalCount = activeDataset.length;
 
-  // 6 smooth zoom levels from 100% down to 10% ultra fine detail
-  const zoomRatios = [1.0, 0.75, 0.50, 0.32, 0.20, 0.10];
+  // 8 smooth zoom levels from 100% macro view down to fine-grained minute-by-minute inspection
+  const zoomRatios = [1.0, 0.70, 0.45, 0.25, 0.14, 0.08, 0.04, 0.02];
   const MAX_ZOOM = zoomRatios.length - 1;
 
   const ratio = zoomRatios[zoomIndex];
-  const sliceCount = zoomIndex === 0 ? totalCount : Math.max(6, Math.round(totalCount * ratio));
+  const sliceCount = zoomIndex === 0 ? totalCount : Math.max(4, Math.round(totalCount * ratio));
   const maxStartIndex = Math.max(0, totalCount - sliceCount);
   const isZoomedDeep = zoomIndex >= 2;
 
@@ -649,7 +649,14 @@ function CandlestickChart({ data, domain, currSymbol, currency, conversionRate, 
     return <div ref={containerRef} style={{ width: "100%", height: "100%" }} />;
   }
 
-  const margin = { top: 18, right: 52, bottom: 24, left: 6 };
+  const isNarrow = width < 540;
+  const isUltraNarrow = width < 380;
+  const margin = {
+    top: 18,
+    right: isUltraNarrow ? 44 : (isNarrow ? 48 : 52),
+    bottom: isNarrow ? 22 : 24,
+    left: isNarrow ? 4 : 6
+  };
   const innerWidth = Math.max(10, width - margin.left - margin.right);
   const innerHeight = Math.max(10, height - margin.top - margin.bottom);
 
@@ -662,7 +669,10 @@ function CandlestickChart({ data, domain, currSymbol, currency, conversionRate, 
   };
 
   const candleSpacing = innerWidth / data.length;
-  const candleWidth = Math.max(2, Math.min(18, candleSpacing * 0.72));
+  const candleWidth = Math.max(
+    1,
+    Math.min(18, candleSpacing > 3 ? candleSpacing * 0.74 : Math.max(1, candleSpacing - 0.4))
+  );
 
   // Ticks for Y-Axis
   const yTicks = [0, 0.25, 0.5, 0.75, 1].map((pct) => {
@@ -673,14 +683,28 @@ function CandlestickChart({ data, domain, currSymbol, currency, conversionRate, 
     };
   });
 
-  // Ticks for X-Axis with full Year & Granular time
-  const maxXTicks = width < 500 ? 4 : 7;
+  // Ticks for X-Axis with full Year & Granular time (adaptive to screen width)
+  const maxXTicks = isUltraNarrow ? 3 : (isNarrow ? 4 : 7);
   const step = Math.max(1, Math.floor(data.length / maxXTicks));
   const xTicks = [];
   for (let i = 0; i < data.length; i += step) {
+    const rawX = margin.left + i * candleSpacing + candleSpacing / 2;
+    let anchor = "middle";
+    let clampedX = rawX;
+
+    // Edge clamping so first and last X-axis date labels never clip outside the chart
+    if (rawX < margin.left + 28) {
+      anchor = "start";
+      clampedX = margin.left + 2;
+    } else if (rawX > width - margin.right - 28) {
+      anchor = "end";
+      clampedX = width - margin.right - 2;
+    }
+
     xTicks.push({
       label: formatChartTick(data[i].date, data.length, isZoomedDeep),
-      x: margin.left + i * candleSpacing + candleSpacing / 2
+      x: clampedX,
+      anchor
     });
   }
 
@@ -728,10 +752,10 @@ function CandlestickChart({ data, domain, currSymbol, currency, conversionRate, 
               strokeDasharray="3 3"
             />
             <text
-              x={width - 6}
+              x={width - (isNarrow ? 4 : 6)}
               y={t.y + 3}
               fill="#515156"
-              fontSize={10}
+              fontSize={isNarrow ? 9.5 : 10}
               fontFamily="var(--font-sans)"
               textAnchor="end"
             >
@@ -747,9 +771,9 @@ function CandlestickChart({ data, domain, currSymbol, currency, conversionRate, 
             x={t.x}
             y={height - 6}
             fill="#515156"
-            fontSize={10}
+            fontSize={isNarrow ? 9.5 : 10}
             fontFamily="var(--font-sans)"
-            textAnchor="middle"
+            textAnchor={t.anchor}
           >
             {t.label}
           </text>
