@@ -10,6 +10,76 @@ import {
 } from "recharts";
 import { ZoomIn, ZoomOut, RotateCcw, TrendingUp, BarChart2, Hand } from "lucide-react";
 
+/**
+ * Formats X-axis date & timestamp dynamically.
+ * Always includes the year; when deeply zoomed in or on intraday data, includes day, hours, and seconds.
+ */
+export function formatChartTick(dateStr, visibleCount = 20, isZoomedDeep = false) {
+  if (!dateStr) return "";
+
+  // Case A: Intraday timestamp: "2024-10-14 15:30:00" or ISO "2024-10-14T15:30:00"
+  if (dateStr.includes(" ") || dateStr.includes("T")) {
+    const [datePart, timePartRaw] = dateStr.replace("T", " ").split(" ");
+    const [y, m, d] = (datePart || "").split("-");
+    const [hh, mm, ss] = (timePartRaw || "").split(":");
+    const shortYear = y ? `'${y.slice(2)}` : "";
+
+    // If deeply zoomed in (few points visible): show hours, minutes and seconds "HH:mm:ss"
+    if (isZoomedDeep && ss !== undefined) {
+      return `${hh || "00"}:${mm || "00"}:${ss || "00"}`;
+    }
+
+    // Moderately zoomed intraday: show Day/Month + Time "14/10 15:30"
+    if (visibleCount <= 28) {
+      return `${d}/${m} ${hh}:${mm}`;
+    }
+
+    // Default intraday tick: "HH:mm"
+    return `${hh}:${mm}`;
+  }
+
+  // Case B: Daily or multi-day date: "2024-10-14"
+  const parts = dateStr.split("-");
+  if (parts.length >= 3) {
+    const [year, month, day] = parts;
+    const shortYear = `'${year.slice(2)}`;
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const mName = months[parseInt(month, 10) - 1] || month;
+
+    // Deeply zoomed in: show Day + Month + Year "14 Oct '24"
+    if (isZoomedDeep || visibleCount <= 20) {
+      return `${day} ${mName} ${shortYear}`;
+    }
+
+    // Macro/zoomed-out view: Month + Year "Oct '24"
+    return `${mName} ${shortYear}`;
+  }
+
+  return dateStr;
+}
+
+/**
+ * Formats complete human-friendly date & timestamp for tooltips.
+ */
+export function formatFullTooltipDate(dateStr) {
+  if (!dateStr) return "";
+  if (dateStr.includes(" ") || dateStr.includes("T")) {
+    const [datePart, timePartRaw] = dateStr.replace("T", " ").split(" ");
+    const [y, m, d] = (datePart || "").split("-");
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const mName = months[parseInt(m, 10) - 1] || m;
+    return `${d} ${mName} ${y} • ${timePartRaw || ""}`;
+  }
+  const parts = dateStr.split("-");
+  if (parts.length >= 3) {
+    const [year, month, day] = parts;
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const mName = months[parseInt(month, 10) - 1] || month;
+    return `${day} ${mName} ${year}`;
+  }
+  return dateStr;
+}
+
 export default function StockChart({
   activeView,
   historyData = [],
@@ -29,6 +99,7 @@ export default function StockChart({
   const dragRef = useRef({ startX: 0, startPanIndex: 0 });
   const lastWheelRef = useRef(0);
   const pinchStartDistRef = useRef(0);
+  const rafIdRef = useRef(null);
 
   const conversionRate = Number(fxRate || usdInrRate) || 84.10;
   const isPositive = stockChange >= 0;
@@ -53,6 +124,7 @@ export default function StockChart({
   const ratio = zoomRatios[zoomIndex];
   const sliceCount = zoomIndex === 0 ? totalCount : Math.max(6, Math.round(totalCount * ratio));
   const maxStartIndex = Math.max(0, totalCount - sliceCount);
+  const isZoomedDeep = zoomIndex >= 2;
 
   // Anchor pan to the latest slice when zoom or data changes
   useEffect(() => {
@@ -64,6 +136,13 @@ export default function StockChart({
     setZoomIndex(0);
     setIsPanMode(false);
   }, [activeView, historyData.length, currentAndFutureForecast.length]);
+
+  // Clean up any pending animation frames
+  useEffect(() => {
+    return () => {
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+    };
+  }, []);
 
   const handleZoomIn = () => {
     setZoomIndex((prev) => Math.min(prev + 1, MAX_ZOOM));
@@ -93,7 +172,7 @@ export default function StockChart({
     });
   };
 
-  // Drag to pan handlers (Mouse & Touch)
+  // High-performance Drag-to-Pan handlers (Mouse & Touch with requestAnimationFrame)
   const handleDragStart = (clientX) => {
     if (zoomIndex === 0 && !isPanMode) return;
     if (zoomIndex === 0 && isPanMode) {
@@ -108,19 +187,27 @@ export default function StockChart({
 
   const handleDragMove = (clientX) => {
     if (!isDragging || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const width = rect.width || 400;
-    const deltaX = clientX - dragRef.current.startX;
+    if (rafIdRef.current) return; // Throttled to monitor display refresh rate (no frame drops)
 
-    // Moving right (deltaX > 0) scrolls back into past
-    // Moving left (deltaX < 0) scrolls forward into future
-    const pointsPerPixel = sliceCount / width;
-    const deltaPoints = Math.round(deltaX * pointsPerPixel * 1.25);
-    const newIndex = Math.max(0, Math.min(maxStartIndex, dragRef.current.startPanIndex - deltaPoints));
-    setPanIndex(newIndex);
+    rafIdRef.current = requestAnimationFrame(() => {
+      rafIdRef.current = null;
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const width = rect.width || 400;
+      const deltaX = clientX - dragRef.current.startX;
+
+      const pointsPerPixel = sliceCount / width;
+      const deltaPoints = Math.round(deltaX * pointsPerPixel * 1.15);
+      const newIndex = Math.max(0, Math.min(maxStartIndex, dragRef.current.startPanIndex - deltaPoints));
+      setPanIndex(newIndex);
+    });
   };
 
   const handleDragEnd = () => {
+    if (rafIdRef.current) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
     setIsDragging(false);
   };
 
@@ -130,17 +217,14 @@ export default function StockChart({
     if (!el) return;
 
     const onWheel = (e) => {
-      // Prevent browser window from scrolling while over chart
       e.preventDefault();
       const now = Date.now();
-      if (now - lastWheelRef.current < 85) return;
+      if (now - lastWheelRef.current < 75) return;
       lastWheelRef.current = now;
 
       if (e.deltaY < 0) {
-        // Wheel up / Trackpad pinch out -> Zoom In
         setZoomIndex((prev) => Math.min(prev + 1, MAX_ZOOM));
       } else if (e.deltaY > 0) {
-        // Wheel down / Trackpad pinch in -> Zoom Out
         setZoomIndex((prev) => {
           const next = Math.max(prev - 1, 0);
           if (next === 0) setIsPanMode(false);
@@ -157,7 +241,6 @@ export default function StockChart({
   const handleTouchStart = (e) => {
     if (!e.touches) return;
     if (e.touches.length === 2) {
-      // 2-finger pinch start
       const d = Math.hypot(
         e.touches[0].clientX - e.touches[1].clientX,
         e.touches[0].clientY - e.touches[1].clientY
@@ -174,16 +257,15 @@ export default function StockChart({
   const handleTouchMove = (e) => {
     if (!e.touches) return;
     if (e.touches.length === 2) {
-      // 2-finger pinch gesture
       const d = Math.hypot(
         e.touches[0].clientX - e.touches[1].clientX,
         e.touches[0].clientY - e.touches[1].clientY
       );
       const delta = d - pinchStartDistRef.current;
-      if (delta > 28) {
+      if (delta > 25) {
         setZoomIndex((prev) => Math.min(prev + 1, MAX_ZOOM));
         pinchStartDistRef.current = d;
-      } else if (delta < -28) {
+      } else if (delta < -25) {
         setZoomIndex((prev) => {
           const next = Math.max(prev - 1, 0);
           if (next === 0) setIsPanMode(false);
@@ -279,7 +361,8 @@ export default function StockChart({
       onTouchEnd={handleTouchEnd}
       style={{
         cursor: isDragging ? "grabbing" : (isInteractiveNav ? "grab" : "default"),
-        touchAction: isInteractiveNav ? "none" : "auto"
+        touchAction: isInteractiveNav ? "none" : "auto",
+        userSelect: "none"
       }}
     >
       {/* Historical Chart Type Switcher: Area vs Candlestick */}
@@ -373,6 +456,7 @@ export default function StockChart({
           conversionRate={conversionRate}
           isPanMode={isPanMode}
           isDragging={isDragging}
+          isZoomedDeep={isZoomedDeep}
         />
       ) : (
         <ResponsiveContainer width="100%" height="100%">
@@ -398,11 +482,8 @@ export default function StockChart({
                 fontSize={10}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(d) => {
-                  const parts = (d || "").split("-");
-                  return parts.length >= 3 ? `${parts[1]}/${parts[2]}` : d;
-                }}
-                minTickGap={35}
+                tickFormatter={(d) => formatChartTick(d, visibleHistoryData.length, isZoomedDeep)}
+                minTickGap={32}
               />
               <YAxis
                 domain={domain}
@@ -417,6 +498,7 @@ export default function StockChart({
               <Tooltip
                 content={<CustomHistoricalTooltip currSymbol={currSymbol} currency={currency} conversionRate={conversionRate} />}
                 cursor={{ stroke: "rgba(255,255,255,0.2)", strokeDasharray: "3 3" }}
+                isAnimationActive={false}
               />
               <Area
                 type="monotone"
@@ -425,6 +507,7 @@ export default function StockChart({
                 strokeWidth={2.2}
                 fillOpacity={1}
                 fill="url(#historicalGradient)"
+                isAnimationActive={false}
               />
             </AreaChart>
           ) : (
@@ -442,11 +525,8 @@ export default function StockChart({
                 fontSize={10}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(d) => {
-                  const parts = (d || "").split("-");
-                  return parts.length >= 2 ? `${parts[0].slice(2)}/${parts[1]}` : d;
-                }}
-                minTickGap={40}
+                tickFormatter={(d) => formatChartTick(d, formattedForecastData.length, isZoomedDeep)}
+                minTickGap={35}
               />
               <YAxis
                 domain={domain}
@@ -461,6 +541,7 @@ export default function StockChart({
               <Tooltip
                 content={<CustomForecastTooltip currSymbol={currSymbol} currency={currency} conversionRate={conversionRate} />}
                 cursor={{ stroke: "rgba(255,214,10,0.3)", strokeDasharray: "3 3" }}
+                isAnimationActive={false}
               />
               {/* True Floating Confidence Corridor between lower and upper */}
               <Area
@@ -507,6 +588,7 @@ export default function StockChart({
                 strokeWidth={2.6}
                 strokeDasharray="4 4"
                 dot={false}
+                isAnimationActive={false}
               />
             </AreaChart>
           )}
@@ -534,7 +616,7 @@ export default function StockChart({
   );
 }
 
-function CandlestickChart({ data, domain, currSymbol, currency, conversionRate, isPanMode, isDragging }) {
+function CandlestickChart({ data, domain, currSymbol, currency, conversionRate, isPanMode, isDragging, isZoomedDeep }) {
   const containerRef = useRef(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [hoveredIndex, setHoveredIndex] = useState(null);
@@ -584,14 +666,13 @@ function CandlestickChart({ data, domain, currSymbol, currency, conversionRate, 
     };
   });
 
-  // Ticks for X-Axis
+  // Ticks for X-Axis with full Year & Granular time
   const maxXTicks = width < 500 ? 4 : 7;
   const step = Math.max(1, Math.floor(data.length / maxXTicks));
   const xTicks = [];
   for (let i = 0; i < data.length; i += step) {
-    const parts = (data[i].date || "").split("-");
     xTicks.push({
-      label: parts.length >= 3 ? `${parts[1]}/${parts[2]}` : data[i].date,
+      label: formatChartTick(data[i].date, data.length, isZoomedDeep),
       x: margin.left + i * candleSpacing + candleSpacing / 2
     });
   }
@@ -733,7 +814,7 @@ function CandlestickChart({ data, domain, currSymbol, currency, conversionRate, 
         )}
       </svg>
 
-      {/* Floating Candlestick Tooltip with dual currency */}
+      {/* Floating Candlestick Tooltip with full timestamp & dual currency */}
       {activeCandle && (
         <div
           className="custom-recharts-tooltip"
@@ -749,7 +830,7 @@ function CandlestickChart({ data, domain, currSymbol, currency, conversionRate, 
           }}
         >
           <div style={{ fontSize: "11px", color: "var(--text-secondary)", marginBottom: "4px" }}>
-            {activeCandle.date}
+            {formatFullTooltipDate(activeCandle.date)}
           </div>
           <div style={{ display: "flex", alignItems: "baseline", gap: "6px", flexWrap: "wrap", marginBottom: "4px" }}>
             <span style={{ fontSize: "16px", fontWeight: 700, color: activeCandle.close >= activeCandle.open ? "var(--apple-green)" : "var(--apple-red)" }}>
@@ -782,7 +863,7 @@ function CustomHistoricalTooltip({ active, payload, label, currSymbol, currency,
   return (
     <div className="custom-recharts-tooltip">
       <div style={{ fontSize: "11px", color: "var(--text-secondary)", marginBottom: "4px" }}>
-        {label}
+        {formatFullTooltipDate(label)}
       </div>
       <div style={{ display: "flex", alignItems: "baseline", gap: "8px", flexWrap: "wrap", marginBottom: "4px" }}>
         <span style={{ fontSize: "16px", fontWeight: 700, color: "#ffffff" }}>
@@ -813,11 +894,11 @@ function CustomForecastTooltip({ active, payload, label, currSymbol, currency, c
   return (
     <div className="custom-recharts-tooltip">
       <div style={{ fontSize: "11px", color: "var(--text-secondary)", marginBottom: "6px" }}>
-        {label}
+        {formatFullTooltipDate(label)}
       </div>
       {data.actual !== null && (
         <div style={{ marginBottom: "6px" }}>
-          <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>Actual Price</div>
+          <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>Current Price</div>
           <div style={{ display: "flex", alignItems: "baseline", gap: "6px", flexWrap: "wrap" }}>
             <span style={{ fontSize: "14px", fontWeight: 600, color: "#38bdf8" }}>
               {currSymbol}{data.actual?.toFixed(2)}

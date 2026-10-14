@@ -370,29 +370,50 @@ def search_ticker(q: str = Query(..., min_length=1, description="Company name or
 
 
 @app.get("/api/stock/{ticker}")
-def get_stock_data(ticker: str, range: str = Query("1y", regex="^(1m|6m|1y|5y|max)$")):
+def get_stock_data(ticker: str, range: str = Query("1y", regex="^(1h|6h|12h|24h|1m|6m|1y|5y|max)$")):
     """Fetches historical price candles and company fundamentals."""
     ticker_clean = ticker.upper().strip()
+    range_lower = range.lower().strip()
 
     try:
         stock = yf.Ticker(ticker_clean)
         
-        period_map = {
-            "1m": "1mo",
-            "6m": "6mo",
-            "1y": "1y",
-            "5y": "5y",
-            "max": "max"
-        }
-        interval_map = {
-            "1m": "1d",
-            "6m": "1d",
-            "1y": "1d",
-            "5y": "1wk",
-            "max": "1mo"
-        }
-        
-        hist = stock.history(period=period_map.get(range, "1y"), interval=interval_map.get(range, "1d"))
+        # Support intraday timeframes (1h, 6h, 12h, 24h) and standard intervals
+        if range_lower == "1h":
+            hist = stock.history(period="1d", interval="1m")
+            if len(hist) > 60:
+                hist = hist.iloc[-60:]
+        elif range_lower == "6h":
+            hist = stock.history(period="1d", interval="2m")
+            if hist.empty or len(hist) < 30:
+                hist = stock.history(period="1d", interval="5m")
+            if len(hist) > 72:
+                hist = hist.iloc[-72:]
+        elif range_lower == "12h":
+            hist = stock.history(period="2d", interval="5m")
+            if len(hist) > 100:
+                hist = hist.iloc[-100:]
+        elif range_lower == "24h":
+            hist = stock.history(period="5d", interval="15m")
+            if len(hist) > 96:
+                hist = hist.iloc[-96:]
+        else:
+            period_map = {
+                "1m": "1mo",
+                "6m": "6mo",
+                "1y": "1y",
+                "5y": "5y",
+                "max": "max"
+            }
+            interval_map = {
+                "1m": "1d",
+                "6m": "1d",
+                "1y": "1d",
+                "5y": "1wk",
+                "max": "1mo"
+            }
+            hist = stock.history(period=period_map.get(range_lower, "1y"), interval=interval_map.get(range_lower, "1d"))
+
         if hist.empty:
             raise HTTPException(status_code=404, detail="No historical data found for this symbol.")
 
@@ -409,11 +430,17 @@ def get_stock_data(ticker: str, range: str = Query("1y", regex="^(1m|6m|1y|5y|ma
         if hist["Date"].dt.tz is not None:
             hist["Date"] = hist["Date"].dt.tz_localize(None)
 
-        # Build clean historical series
+        # Check if dataset is intraday (has hours/minutes)
+        is_intraday = range_lower in {"1h", "6h", "12h", "24h"} or (
+            len(hist) > 1 and "Date" in hist.columns and (hist["Date"].iloc[-1] - hist["Date"].iloc[0]).total_seconds() < 86400 * 3
+        )
+        date_format = "%Y-%m-%d %H:%M:%S" if is_intraday else "%Y-%m-%d"
+
+        # Build clean historical series with exact timestamps
         candles = []
         for _, row in hist.iterrows():
             candles.append({
-                "date": row["Date"].strftime("%Y-%m-%d"),
+                "date": row["Date"].strftime(date_format),
                 "open": round(float(row["Open"]), 2),
                 "high": round(float(row["High"]), 2),
                 "low": round(float(row["Low"]), 2),

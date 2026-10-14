@@ -9,7 +9,7 @@ export default function RangeAndDepthControls({
   onYearsChange,
   loading
 }) {
-  const ranges = ["1m", "6m", "1y", "5y", "max"];
+  const ranges = ["1h", "6h", "12h", "24h", "1m", "6m", "1y", "5y", "max"];
 
   return (
     <div className="chart-controls-bar">
