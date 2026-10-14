@@ -261,24 +261,11 @@ export default function Navbar({
 
             <div>
               <div style={{ display: "flex", alignItems: "center" }}>
-                <span style={{
-                  fontFamily: "var(--font-display)",
-                  fontSize: "19px",
-                  fontWeight: 800,
-                  letterSpacing: "-0.03em",
-                  color: "#ffffff"
-                }}>
-                  ArthaX
+                <span className="nav-brand-title">
+                  ArthaAstra<span className="brand-x">X</span>
                 </span>
               </div>
-              <p style={{
-                fontSize: "10.5px",
-                color: "var(--text-secondary)",
-                margin: 0,
-                fontWeight: 500,
-                letterSpacing: "-0.01em",
-                whiteSpace: "nowrap"
-              }}>
+              <p className="nav-brand-subtitle">
                 From Family of AstraGenX
               </p>
             </div>

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -9,6 +9,7 @@ import {
   Tooltip,
   ReferenceLine
 } from "recharts";
+import { ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 
 export default function StockChart({
   activeView,
@@ -17,20 +18,56 @@ export default function StockChart({
   currency = "USD",
   stockChange = 0
 }) {
+  const [zoomIndex, setZoomIndex] = useState(0); // 0: 100%, 1: 65%, 2: 40%, 3: 20%
   const isPositive = stockChange >= 0;
   const currSymbol = currency === "INR" ? "₹" : (currency === "USD" ? "$" : `${currency} `);
 
-  // Compute domain bounds dynamically with breathing room
+  // Reset zoom whenever view or data changes
+  useEffect(() => {
+    setZoomIndex(0);
+  }, [activeView, historyData.length, forecastData.length]);
+
+  const handleZoomIn = () => {
+    setZoomIndex((prev) => Math.min(prev + 1, 3));
+  };
+
+  const handleZoomOut = () => {
+    setZoomIndex((prev) => Math.max(prev - 1, 0));
+  };
+
+  const handleResetZoom = () => {
+    setZoomIndex(0);
+  };
+
+  // Slice visible data based on zoom level
+  const zoomRatios = [1, 0.65, 0.40, 0.20];
+  const ratio = zoomRatios[zoomIndex];
+
+  const visibleHistoryData = React.useMemo(() => {
+    if (!historyData || historyData.length === 0) return [];
+    if (zoomIndex === 0) return historyData;
+    const count = Math.max(8, Math.round(historyData.length * ratio));
+    return historyData.slice(historyData.length - count);
+  }, [historyData, zoomIndex, ratio]);
+
+  const visibleForecastData = React.useMemo(() => {
+    if (!forecastData || forecastData.length === 0) return [];
+    if (zoomIndex === 0) return forecastData;
+    const count = Math.max(8, Math.round(forecastData.length * ratio));
+    return forecastData.slice(forecastData.length - count);
+  }, [forecastData, zoomIndex, ratio]);
+
+  // Compute domain bounds dynamically on the visible slice for high-resolution zoom
   let minY = Infinity;
   let maxY = -Infinity;
 
   if (activeView === "historical") {
-    historyData.forEach((d) => {
+    visibleHistoryData.forEach((d) => {
       if (d.close < minY) minY = d.close;
       if (d.close > maxY) maxY = d.close;
     });
   } else {
-    forecastData.forEach((d) => {
+    visibleForecastData.forEach((d) => {
       const val = d.actual ?? d.predicted;
       const upper = d.upper ?? val;
       const lower = d.lower ?? val;
@@ -44,14 +81,47 @@ export default function StockChart({
     maxY = 200;
   }
 
-  const padding = (maxY - minY) * 0.1 || 10;
+  const padding = (maxY - minY) * 0.08 || 5;
   const domain = [Math.floor(minY - padding), Math.ceil(maxY + padding)];
 
   return (
     <div className="stock-chart-container">
+      {/* Floating Cupertino Zoom Controls */}
+      <div className="chart-zoom-controls">
+        <button
+          onClick={handleZoomIn}
+          disabled={zoomIndex >= 3}
+          className="chart-zoom-btn"
+          title="Zoom in (finer detail)"
+          aria-label="Zoom in"
+        >
+          <ZoomIn size={13} />
+        </button>
+        <button
+          onClick={handleZoomOut}
+          disabled={zoomIndex <= 0}
+          className="chart-zoom-btn"
+          title="Zoom out"
+          aria-label="Zoom out"
+        >
+          <ZoomOut size={13} />
+        </button>
+        {zoomIndex > 0 && (
+          <button
+            onClick={handleResetZoom}
+            className="chart-zoom-btn chart-zoom-reset"
+            title="Reset zoom"
+            aria-label="Reset zoom"
+          >
+            <RotateCcw size={11} />
+            <span>Reset</span>
+          </button>
+        )}
+      </div>
+
       <ResponsiveContainer width="100%" height="100%">
         {activeView === "historical" ? (
-          <AreaChart data={historyData} margin={{ top: 18, right: 4, left: -8, bottom: 0 }}>
+          <AreaChart data={visibleHistoryData} margin={{ top: 18, right: 4, left: -8, bottom: 0 }}>
             <defs>
               <linearGradient id="historicalGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop
@@ -102,7 +172,7 @@ export default function StockChart({
             />
           </AreaChart>
         ) : (
-          <AreaChart data={forecastData} margin={{ top: 22, right: 4, left: -8, bottom: 0 }}>
+          <AreaChart data={visibleForecastData} margin={{ top: 22, right: 4, left: -8, bottom: 0 }}>
             <defs>
               {/* Golden Prophet Confidence Corridor */}
               <linearGradient id="confidenceGradient" x1="0" y1="0" x2="0" y2="1">
@@ -173,7 +243,7 @@ export default function StockChart({
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
             <span style={{ width: "8px", height: "3px", background: "#ffd60a", borderRadius: "2px" }} />
-            <span style={{ color: "#ffd60a", fontWeight: 500 }}>Prophet Trajectory</span>
+            <span style={{ color: "#ffd60a", fontWeight: 500 }}>AI Trajectory</span>
           </div>
           <div className="hide-on-mobile" style={{ display: "flex", alignItems: "center", gap: "5px" }}>
             <span style={{ width: "8px", height: "8px", background: "rgba(255, 214, 10, 0.25)", borderRadius: "2px" }} />

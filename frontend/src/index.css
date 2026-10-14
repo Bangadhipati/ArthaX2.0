@@ -3,6 +3,7 @@
 :root {
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", sans-serif;
   --font-display: "Outfit", -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+  --font-brand: "Plus Jakarta Sans", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif;
 
   /* Apple Dark Palette */
   --bg-canvas: #060709;
@@ -635,6 +636,72 @@ input[type="range"].cupertino-slider::-webkit-slider-thumb:hover {
   pointer-events: none;
 }
 
+/* Floating Chart Zoom Controls */
+.chart-zoom-controls {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(18, 20, 26, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 3px 6px;
+  border-radius: 9999px;
+  border: 1px solid var(--border-subtle);
+  z-index: 10;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+.chart-zoom-btn {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 4px 7px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  line-height: 1;
+  outline: none;
+}
+
+.chart-zoom-btn:hover:not(:disabled) {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.chart-zoom-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.chart-zoom-reset {
+  color: var(--apple-blue);
+  font-weight: 600;
+  padding: 4px 8px;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0 6px 6px 0;
+}
+
+@media (max-width: 640px) {
+  .chart-zoom-controls {
+    top: 6px;
+    right: 6px;
+    padding: 2px 4px;
+    gap: 2px;
+  }
+  .chart-zoom-btn {
+    padding: 3px 5px;
+    font-size: 10px;
+  }
+}
+
 @media (max-width: 1023px) {
   .stock-chart-container {
     height: 330px;
@@ -848,6 +915,44 @@ input[type="range"].cupertino-slider::-webkit-slider-thumb:hover {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Brand Logo Typography */
+.nav-brand-title {
+  font-family: var(--font-brand);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  line-height: 1.1;
+}
+
+.nav-brand-title .brand-x {
+  background: linear-gradient(135deg, #64d2ff 0%, #0a84ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+  margin-left: 0.5px;
+}
+
+.nav-brand-subtitle {
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin: 1px 0 0 0;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .nav-brand-title {
+    font-size: 18px;
+  }
+  .nav-brand-subtitle {
+    font-size: 9.5px;
   }
 }
 
