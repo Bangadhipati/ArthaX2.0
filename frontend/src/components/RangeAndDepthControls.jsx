@@ -32,37 +32,25 @@ export default function RangeAndDepthControls({
           </div>
         </div>
       ) : (
-        <div className="horizon-group" style={{ display: "flex", alignItems: "center", gap: "12px", width: "100%", maxWidth: "520px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--apple-gold)", fontSize: "12px", fontWeight: 600, whiteSpace: "nowrap" }}>
-            <Sliders size={15} />
+        <div className="timeframe-group horizon-btn-group">
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--apple-gold)", fontSize: "12px", fontWeight: 600, whiteSpace: "nowrap", marginRight: "4px" }}>
+            <Calendar size={14} />
             <span>Horizon:</span>
           </div>
 
-          <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "10px" }}>
-            <input
-              type="range"
-              min="1"
-              max="5"
-              step="1"
-              value={forecastYears}
-              onChange={(e) => onYearsChange(parseInt(e.target.value))}
-              disabled={loading}
-              className="cupertino-slider"
-            />
-            <span style={{
-              fontSize: "12px",
-              fontWeight: 600,
-              color: "#ffffff",
-              minWidth: "55px",
-              padding: "4px 8px",
-              borderRadius: "8px",
-              background: "rgba(255, 214, 10, 0.12)",
-              border: "1px solid rgba(255, 214, 10, 0.25)",
-              textAlign: "center",
-              whiteSpace: "nowrap"
-            }}>
-              {forecastYears} {forecastYears === 1 ? "Yr" : "Yrs"}
-            </span>
+          <div className="segmented-control timeframe-segmented-control">
+            {[1, 2, 3, 4, 5].map((y) => (
+              <button
+                key={y}
+                className={`segmented-option timeframe-btn ${forecastYears === y ? "active active-gold" : ""}`}
+                onClick={() => onYearsChange(y)}
+                disabled={loading}
+                title={`${y} Year${y > 1 ? "s" : ""} AI Prediction Horizon`}
+              >
+                <span className="horizon-long">{y} {y === 1 ? "Year" : "Years"}</span>
+                <span className="horizon-short">{y}Y</span>
+              </button>
+            ))}
           </div>
         </div>
       )}

@@ -1047,6 +1047,31 @@ input[type="range"].cupertino-slider::-webkit-slider-thumb:hover {
   text-transform: uppercase;
 }
 
+.horizon-btn {
+  text-transform: none !important;
+}
+
+.segmented-option.active-gold {
+  color: #ffffff !important;
+  background: rgba(255, 214, 10, 0.24) !important;
+  border: 1px solid rgba(255, 214, 10, 0.45) !important;
+  box-shadow: 0 2px 10px rgba(255, 214, 10, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  font-weight: 600;
+}
+
+.horizon-short {
+  display: none;
+}
+
+@media (max-width: 540px) {
+  .horizon-long {
+    display: none;
+  }
+  .horizon-short {
+    display: inline;
+  }
+}
+
 @media (max-width: 640px) {
   .chart-controls-bar {
     padding: 10px 12px;

@@ -293,7 +293,7 @@ export default function App() {
                       <div className="chart-loading-title">
                         {activeView === "historical"
                           ? `Syncing ${ticker} Market History...`
-                          : `Generating Prophet AI Trajectory for ${ticker}...`}
+                          : `Generating AI Trajectory for ${ticker}...`}
                       </div>
                       <div className="chart-loading-subtitle">
                         {activeView === "historical"
@@ -424,7 +424,7 @@ export default function App() {
               </div>
               <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "14px", padding: "14px" }}>
                 <div style={{ color: "var(--apple-gold)", marginBottom: "4px" }}><Sparkles size={16} /></div>
-                <div style={{ fontSize: "13px", fontWeight: 600, color: "#ffffff", marginBottom: "2px" }}>Prophet Forecasts</div>
+                <div style={{ fontSize: "13px", fontWeight: 600, color: "#ffffff", marginBottom: "2px" }}>AI Forecasts</div>
                 <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>1 to 5-year Bayesian trend projections</div>
               </div>
               <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "14px", padding: "14px" }}>
