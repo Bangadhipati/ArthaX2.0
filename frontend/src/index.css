@@ -257,3 +257,18 @@ input[type="range"].cupertino-slider::-webkit-slider-thumb:hover {
   padding: 10px 14px !important;
   box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6) !important;
 }
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin-animation {
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+

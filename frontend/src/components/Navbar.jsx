@@ -1,7 +1,7 @@
 import React from "react";
-import { Search, Sparkles, TrendingUp, Globe } from "lucide-react";
+import { Search, Sparkles, TrendingUp, Globe, Loader2, Zap } from "lucide-react";
 
-export default function Navbar({ onOpenSearch, isBackendLive, usdInrRate }) {
+export default function Navbar({ onOpenSearch, aiStatus = "idle", onConnectAI, usdInrRate }) {
   return (
     <header style={{
       display: "flex",
@@ -121,30 +121,66 @@ export default function Navbar({ onOpenSearch, isBackendLive, usdInrRate }) {
           <span>1 USD = <strong style={{ color: "#ffffff" }}>₹{usdInrRate || "84.10"}</strong></span>
         </div>
 
-        {/* AI Engine Status */}
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "7px",
-          background: isBackendLive ? "rgba(48, 209, 88, 0.08)" : "rgba(10, 132, 255, 0.08)",
-          border: `1px solid ${isBackendLive ? "rgba(48, 209, 88, 0.2)" : "rgba(10, 132, 255, 0.2)"}`,
-          padding: "6px 12px",
-          borderRadius: "9999px",
-          fontSize: "12px",
-          fontWeight: 500,
-          color: isBackendLive ? "var(--apple-green)" : "var(--apple-blue)"
-        }}>
-          <div
-            className="breathing-dot"
+        {/* Dynamic 3-State AI Engine Action Pill */}
+        {aiStatus === "live" ? (
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "7px",
+            background: "rgba(48, 209, 88, 0.1)",
+            border: "1px solid rgba(48, 209, 88, 0.3)",
+            padding: "6px 14px",
+            borderRadius: "9999px",
+            fontSize: "12px",
+            fontWeight: 600,
+            color: "var(--apple-green)",
+            letterSpacing: "-0.01em"
+          }}>
+            <div
+              className="breathing-dot"
+              style={{
+                width: "7px",
+                height: "7px",
+                borderRadius: "50%",
+                background: "var(--apple-green)",
+                boxShadow: "0 0 8px var(--apple-green)"
+              }}
+            />
+            <span>AI is LIVE</span>
+          </div>
+        ) : aiStatus === "connecting" ? (
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            background: "rgba(255, 214, 10, 0.12)",
+            border: "1px solid rgba(255, 214, 10, 0.3)",
+            padding: "6px 14px",
+            borderRadius: "9999px",
+            fontSize: "12px",
+            fontWeight: 600,
+            color: "var(--apple-gold)"
+          }}>
+            <Loader2 size={13} className="spin-animation" style={{ color: "var(--apple-gold)" }} />
+            <span>Connecting to AI...</span>
+          </div>
+        ) : (
+          <button
+            onClick={onConnectAI}
+            className="apple-button apple-button-primary"
             style={{
-              width: "6px",
-              height: "6px",
-              borderRadius: "50%",
-              background: isBackendLive ? "var(--apple-green)" : "var(--apple-blue)"
+              padding: "6px 14px",
+              fontSize: "12px",
+              borderRadius: "9999px",
+              cursor: "pointer",
+              gap: "6px",
+              boxShadow: "0 4px 14px rgba(10, 132, 255, 0.3)"
             }}
-          />
-          <span>{isBackendLive ? "AI Engine Connected" : "Local AI Engine"}</span>
-        </div>
+          >
+            <Zap size={13} style={{ fill: "#ffffff" }} />
+            <span>Connect AI</span>
+          </button>
+        )}
       </div>
     </header>
   );

@@ -17,13 +17,15 @@ export default function App() {
 
   const [stock, setStock] = useState(MOCK_STOCKS.AAPL);
   const [forecast, setForecast] = useState(null);
-  const [isBackendLive, setIsBackendLive] = useState(false);
+  const [aiStatus, setAiStatus] = useState("idle"); // "idle" | "connecting" | "live"
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // 1. Initial health ping
+  // 1. Initial health ping (checks if already warm/local)
   useEffect(() => {
-    checkBackendHealth().then((live) => setIsBackendLive(live));
+    checkBackendHealth().then((live) => {
+      setAiStatus(live ? "live" : "idle");
+    });
   }, []);
 
   // 2. Load stock historical data
@@ -57,6 +59,34 @@ export default function App() {
     loadForecast(ticker, forecastYears);
   }, [ticker, forecastYears, loadForecast]);
 
+  // On-demand AI wake up trigger
+  const handleConnectAI = useCallback(async () => {
+    if (aiStatus === "connecting" || aiStatus === "live") return;
+
+    setAiStatus("connecting");
+    const startTime = Date.now();
+    const maxWaitTime = 45000; // 45 seconds max wait for Render cold-start
+
+    const poll = async () => {
+      const isLive = await checkBackendHealth();
+      if (isLive) {
+        setAiStatus("live");
+        // Immediately reload active stock and forecast with live data
+        loadStock(ticker, selectedRange);
+        loadForecast(ticker, forecastYears);
+        return;
+      }
+
+      if (Date.now() - startTime < maxWaitTime) {
+        setTimeout(poll, 3000);
+      } else {
+        setAiStatus("idle");
+      }
+    };
+
+    poll();
+  }, [aiStatus, ticker, selectedRange, forecastYears, loadStock, loadForecast]);
+
   const handleSelectTicker = (newTicker) => {
     setTicker(newTicker);
   };
@@ -66,7 +96,8 @@ export default function App() {
       {/* Top Navbar */}
       <Navbar
         onOpenSearch={() => setIsSearchOpen(true)}
-        isBackendLive={isBackendLive}
+        aiStatus={aiStatus}
+        onConnectAI={handleConnectAI}
         usdInrRate={stock?.usdInrRate}
       />
 
