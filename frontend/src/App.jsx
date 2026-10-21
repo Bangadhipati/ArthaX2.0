@@ -121,13 +121,16 @@ export default function App() {
 
   const handleSelectTicker = (newTicker) => {
     const sym = newTicker.toUpperCase().trim();
-    if (sym && sym !== ticker) {
-      setTicker(sym);
-      if (MOCK_STOCKS[sym]) {
-        setStock(MOCK_STOCKS[sym]);
+    if (sym) {
+      if (sym !== ticker) {
+        setTicker(sym);
+        if (MOCK_STOCKS[sym]) {
+          setStock(MOCK_STOCKS[sym]);
+        }
+        setStockLoading(true);
+        setForecastLoading(true);
       }
-      setStockLoading(true);
-      setForecastLoading(true);
+      setActivePage("market-intelligence");
     }
   };
 
