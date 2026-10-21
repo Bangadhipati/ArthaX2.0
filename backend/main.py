@@ -1,7 +1,12 @@
 import os
 import re
+import time
+import email.utils
+import urllib.request
+import urllib.parse
+import xml.etree.ElementTree as ET
 import warnings
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
 import pandas as pd
@@ -324,6 +329,164 @@ def health():
         "timestamp": TODAY,
         "keep_alive": True
     }
+
+
+# In-memory news cache: { cache_key: { "timestamp": float, "data": list } }
+NEWS_CACHE = {}
+NEWS_CACHE_TTL = 180  # 3 minutes
+
+def extract_news_tickers(text: str) -> list:
+    """Identifies prominent market asset and ticker mentions."""
+    found = []
+    text_upper = text.upper()
+    keywords = [
+        ("NVIDIA", "NVDA"),
+        ("NVDA", "NVDA"),
+        ("TESLA", "TSLA"),
+        ("ELON MUSK", "TSLA"),
+        ("TSLA", "TSLA"),
+        ("APPLE", "AAPL"),
+        ("AAPL", "AAPL"),
+        ("MICROSOFT", "MSFT"),
+        ("MSFT", "MSFT"),
+        ("AMAZON", "AMZN"),
+        ("AMZN", "AMZN"),
+        ("GOOGLE", "GOOGL"),
+        ("ALPHABET", "GOOGL"),
+        ("GOOGL", "GOOGL"),
+        ("META", "META"),
+        ("BITCOIN", "BTC-USD"),
+        ("CRYPTO", "BTC-USD"),
+        ("ETHEREUM", "ETH-USD"),
+        ("RELIANCE", "RELIANCE.NS"),
+        ("TATA", "TATAMOTORS.NS"),
+        ("INFOSYS", "INFY.NS"),
+        ("NIFTY", "^NSEI"),
+        ("SENSEX", "^BSESN"),
+        ("S&P 500", "^GSPC"),
+        ("NASDAQ", "^IXIC"),
+        ("DOW", "^DJI"),
+        ("BOEING", "BA")
+    ]
+    for kw, sym in keywords:
+        if kw in text_upper and sym not in found:
+            found.append(sym)
+            if len(found) >= 3:
+                break
+    return found
+
+
+def format_relative_time(pub_date_str: str) -> str:
+    """Converts RFC-822 date to human relative format like '20m ago'."""
+    try:
+        dt = email.utils.parsedate_to_datetime(pub_date_str)
+        now = datetime.now(dt.tzinfo)
+        diff = now - dt
+        secs = int(diff.total_seconds())
+        if secs < 60:
+            return "Just now"
+        elif secs < 3600:
+            return f"{secs // 60}m ago"
+        elif secs < 86400:
+            return f"{secs // 3600}h ago"
+        elif secs < 172800:
+            return "Yesterday"
+        else:
+            return f"{secs // 86400}d ago"
+    except Exception:
+        return "Recent"
+
+
+@app.get("/api/news")
+def get_financial_news(
+    category: str = Query("all", description="Category: all, markets, tech, india, crypto"),
+    q: Optional[str] = Query(None, description="Optional keyword or ticker search query"),
+    limit: int = Query(35, ge=1, le=100)
+):
+    """
+    Fetches real-time institutional financial news from verified global feeds
+    with auto-detected tickers, publisher attribution, and relative publish timestamps.
+    100% free with 0 API key dependencies.
+    """
+    cache_key = f"{category}_{q or ''}_{limit}"
+    now_ts = time.time()
+    if cache_key in NEWS_CACHE:
+        cached = NEWS_CACHE[cache_key]
+        if now_ts - cached["timestamp"] < NEWS_CACHE_TTL:
+            return {"category": category, "count": len(cached["data"]), "results": cached["data"]}
+
+    # Feed endpoints
+    feeds = {
+        "all": "https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=en-US&gl=US&ceid=US:en",
+        "markets": "https://news.google.com/rss/search?q=stock+market+wall+street+when:3d&hl=en-US&gl=US&ceid=US:en",
+        "tech": "https://news.google.com/rss/search?q=tech+stocks+nvidia+ai+when:3d&hl=en-US&gl=US&ceid=US:en",
+        "india": "https://news.google.com/rss/search?q=nifty+sensex+stock+market+india+when:3d&hl=en-IN&gl=IN&ceid=IN:en",
+        "crypto": "https://news.google.com/rss/search?q=crypto+bitcoin+fed+interest+rates+when:3d&hl=en-US&gl=US&ceid=US:en"
+    }
+
+    if q and q.strip():
+        clean_q = urllib.parse.quote_plus(f"{q.strip()} stock finance when:7d")
+        feed_url = f"https://news.google.com/rss/search?q={clean_q}&hl=en-US&gl=US&ceid=US:en"
+    else:
+        feed_url = feeds.get(category.lower(), feeds["all"])
+
+    articles = []
+    try:
+        req = urllib.request.Request(feed_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+        res = urllib.request.urlopen(req, timeout=7)
+        root = ET.fromstring(res.read())
+
+        items = root.findall(".//item")
+        for idx, item in enumerate(items[:limit]):
+            raw_title = item.find("title").text if item.find("title") is not None else ""
+            link = item.find("link").text if item.find("link") is not None else ""
+            pub_date = item.find("pubDate").text if item.find("pubDate") is not None else ""
+
+            parts = raw_title.rsplit(" - ", 1)
+            title = parts[0].strip() if len(parts) > 1 else raw_title.strip()
+            publisher = parts[1].strip() if len(parts) > 1 else "Market News"
+
+            time_ago = format_relative_time(pub_date)
+            tickers = extract_news_tickers(title)
+
+            # Assign topic badge
+            if category == "all":
+                t_lower = title.lower()
+                if any(k in t_lower for k in ["bitcoin", "crypto", "fed", "rate", "inflation"]):
+                    cat_tag = "Crypto & Macro"
+                elif any(k in t_lower for k in ["ai", "tech", "nvidia", "chip", "semiconductor", "apple"]):
+                    cat_tag = "Tech & AI"
+                elif any(k in t_lower for k in ["nifty", "sensex", "india", "rupee", "sebi", "rbi"]):
+                    cat_tag = "India & NSE"
+                else:
+                    cat_tag = "Global Markets"
+            else:
+                tag_map = {
+                    "markets": "Global Markets",
+                    "tech": "Tech & AI",
+                    "india": "India & NSE",
+                    "crypto": "Crypto & Macro"
+                }
+                cat_tag = tag_map.get(category, "Finance")
+
+            articles.append({
+                "id": f"art-{idx}-{abs(hash(title)) % 100000}",
+                "title": title,
+                "publisher": publisher,
+                "link": link,
+                "timeAgo": time_ago,
+                "pubDate": pub_date,
+                "tickers": tickers,
+                "category": cat_tag
+            })
+
+        NEWS_CACHE[cache_key] = {"timestamp": now_ts, "data": articles}
+    except Exception as e:
+        if cache_key in NEWS_CACHE:
+            return {"category": category, "count": len(NEWS_CACHE[cache_key]["data"]), "results": NEWS_CACHE[cache_key]["data"]}
+        return {"category": category, "count": 0, "results": [], "error": str(e)}
+
+    return {"category": category, "count": len(articles), "results": articles}
 
 
 @app.get("/api/search")

@@ -151,3 +151,27 @@ function formatNumber(val) {
   if (val >= 1e6) return "$" + (val / 1e6).toFixed(2) + "M";
   return "$" + val.toLocaleString();
 }
+
+export async function fetchFinanceNews(category = "all", query = "", limit = 35) {
+  const endpoint = getActiveApiBase();
+  const params = new URLSearchParams();
+  if (category && category !== "all") params.append("category", category);
+  if (query && query.trim()) params.append("q", query.trim());
+  if (limit) params.append("limit", limit.toString());
+
+  try {
+    const res = await fetch(`${endpoint}/api/news?${params.toString()}`, {
+      signal: AbortSignal.timeout(6000)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.items) && data.items.length > 0) {
+        return data.items;
+      }
+    }
+  } catch (err) {
+    console.warn("fetchFinanceNews live error:", err);
+  }
+
+  return null;
+}

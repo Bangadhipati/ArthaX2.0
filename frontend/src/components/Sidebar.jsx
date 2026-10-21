@@ -1,5 +1,5 @@
 import React from "react";
-import { Activity } from "lucide-react";
+import { Activity, Newspaper } from "lucide-react";
 
 export default function Sidebar({
   activePage = "market-intelligence",
@@ -34,9 +34,9 @@ export default function Sidebar({
                 if (onSelectPage) onSelectPage("market-intelligence");
                 if (onCloseMobile) onCloseMobile();
               }}
-              className="sidebar-nav-item active"
+              className={`sidebar-nav-item ${activePage === "market-intelligence" ? "active" : ""}`}
               style={{
-                background: "rgba(10, 132, 255, 0.15)",
+                background: activePage === "market-intelligence" ? "rgba(10, 132, 255, 0.15)" : "transparent",
                 border: "none",
                 width: "100%",
                 textAlign: "left"
@@ -45,10 +45,54 @@ export default function Sidebar({
               <Activity
                 size={16}
                 strokeWidth={2}
-                style={{ color: "var(--apple-blue)" }}
+                style={{ color: activePage === "market-intelligence" ? "var(--apple-blue)" : "var(--text-secondary)" }}
               />
-              <span style={{ color: "#ffffff", fontWeight: 600 }}>
+              <span style={{
+                color: activePage === "market-intelligence" ? "#ffffff" : "var(--text-secondary)",
+                fontWeight: activePage === "market-intelligence" ? 600 : 500
+              }}>
                 Market Intelligence
+              </span>
+            </button>
+
+            <button
+              onClick={() => {
+                if (onSelectPage) onSelectPage("finance-news");
+                if (onCloseMobile) onCloseMobile();
+              }}
+              className={`sidebar-nav-item ${activePage === "finance-news" ? "active" : ""}`}
+              style={{
+                background: activePage === "finance-news" ? "rgba(10, 132, 255, 0.15)" : "transparent",
+                border: "none",
+                width: "100%",
+                textAlign: "left"
+              }}
+            >
+              <Newspaper
+                size={16}
+                strokeWidth={2}
+                style={{ color: activePage === "finance-news" ? "var(--apple-blue)" : "var(--text-secondary)" }}
+              />
+              <span style={{
+                color: activePage === "finance-news" ? "#ffffff" : "var(--text-secondary)",
+                fontWeight: activePage === "finance-news" ? 600 : 500
+              }}>
+                Finance News
+              </span>
+              <span
+                style={{
+                  marginLeft: "auto",
+                  fontSize: "9.5px",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  padding: "2px 6px",
+                  borderRadius: "9999px",
+                  background: "rgba(48, 209, 88, 0.15)",
+                  color: "var(--apple-green)",
+                  letterSpacing: "0.04em"
+                }}
+              >
+                Live
               </span>
             </button>
           </div>

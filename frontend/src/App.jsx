@@ -7,6 +7,7 @@ import MetricsGrid from "./components/MetricsGrid";
 import IntelligenceCard from "./components/IntelligenceCard";
 import Sidebar from "./components/Sidebar";
 import ComingSoonPage from "./components/ComingSoonPage";
+import FinanceNewsPage from "./components/FinanceNewsPage";
 import SpiderLoadingAnimation from "./components/SpiderLoadingAnimation";
 import { fetchStockData, fetchForecastData, checkBackendHealth } from "./api";
 import { POPULAR_TICKERS, MOCK_STOCKS } from "./mockData";
@@ -160,7 +161,14 @@ export default function App() {
 
         {/* Main Content Area (Shifted to right on big screens) */}
         <main className="app-main-content">
-          {activePage !== "market-intelligence" ? (
+          {activePage === "finance-news" ? (
+            <FinanceNewsPage
+              onSelectTicker={(sym) => {
+                handleSelectTicker(sym);
+                setActivePage("market-intelligence");
+              }}
+            />
+          ) : activePage !== "market-intelligence" ? (
             <ComingSoonPage
               pageId={activePage}
               onBackToIntelligence={() => setActivePage("market-intelligence")}
