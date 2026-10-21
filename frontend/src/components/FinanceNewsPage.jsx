@@ -4,6 +4,7 @@ import {
   ExternalLink,
   Clock,
   Search,
+  X,
   RotateCw,
   TrendingUp,
   Globe,
@@ -67,6 +68,7 @@ const COMPANY_ALIASES = {
 export default function FinanceNewsPage({ onSelectTicker }) {
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [news, setNews] = useState(MOCK_FINANCE_NEWS);
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -74,6 +76,31 @@ export default function FinanceNewsPage({ onSelectTicker }) {
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
   const searchDebounceRef = useRef(null);
+  const searchInputRef = useRef(null);
+  const searchContainerRef = useRef(null);
+
+  // Auto-focus search input when opened
+  useEffect(() => {
+    if (isSearchOpen && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [isSearchOpen]);
+
+  // Close search on click outside if query is empty
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        isSearchOpen &&
+        !searchQuery.trim() &&
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(e.target)
+      ) {
+        setIsSearchOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isSearchOpen, searchQuery]);
 
   // Fetch news from API (with category and optional server query)
   const loadNews = async (cat = activeCategory, query = "") => {
@@ -107,6 +134,7 @@ export default function FinanceNewsPage({ onSelectTicker }) {
   // Initial load and category changes
   useEffect(() => {
     setSearchQuery("");
+    setIsSearchOpen(false);
     loadNews(activeCategory, "");
   }, [activeCategory]);
 
@@ -118,7 +146,6 @@ export default function FinanceNewsPage({ onSelectTicker }) {
 
     const trimmed = searchQuery.trim();
     if (!trimmed) {
-      // Re-fetch base category news when search is cleared
       return;
     }
 
@@ -139,9 +166,24 @@ export default function FinanceNewsPage({ onSelectTicker }) {
     loadNews(activeCategory, searchQuery.trim());
   };
 
-  const handleClearSearch = () => {
+  const handleOpenSearch = () => {
+    setIsSearchOpen(true);
+  };
+
+  const handleCloseSearch = () => {
+    setIsSearchOpen(false);
     setSearchQuery("");
     loadNews(activeCategory, "");
+  };
+
+  const handleCardClick = (e, url) => {
+    // If the click originated from a button (e.g. ticker badge) or an existing <a> tag, don't trigger secondary open
+    if (e.target.closest("button") || e.target.closest("a")) {
+      return;
+    }
+    if (url) {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
   };
 
   const handleKeyDownSearch = (e) => {
@@ -149,6 +191,8 @@ export default function FinanceNewsPage({ onSelectTicker }) {
       if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
       setIsSearchingServer(true);
       loadNews(activeCategory, searchQuery.trim());
+    } else if (e.key === "Escape") {
+      handleCloseSearch();
     }
   };
 
@@ -193,54 +237,60 @@ export default function FinanceNewsPage({ onSelectTicker }) {
 
   return (
     <div className="finance-news-container">
-      {/* Top Banner / Title Bar */}
-      <div className="news-header">
+      {/* Top Banner / Title Bar (Unboxed & Open) */}
+      <div className="news-header-unboxed">
         <div className="news-title-group">
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div className="news-header-icon-box">
-              <Newspaper size={20} style={{ color: "var(--apple-blue)" }} />
-            </div>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <h1 className="news-main-title">Financial Intelligence & Global News</h1>
-                <div className="news-live-badge">
-                  <div className="breathing-dot" style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--apple-green)" }} />
-                  <span>LIVE WIRE</span>
-                </div>
+          <div className="news-header-icon-box">
+            <Newspaper size={19} style={{ color: "var(--apple-blue)" }} />
+          </div>
+          <div className="news-title-text-col">
+            <div className="news-title-row">
+              <h1 className="news-main-title">Financial Intelligence & Global News</h1>
+              <div className="news-live-badge">
+                <div className="breathing-dot" style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--apple-green)" }} />
+                <span>LIVE WIRE</span>
               </div>
-              <p className="news-subtitle">
-                Institutional feeds from Bloomberg, WSJ, Reuters, CNBC & FT • Real-Time Company & Market Intelligence
-              </p>
             </div>
           </div>
         </div>
 
-        {/* Right actions: search & refresh */}
-        <div className="news-actions-bar">
-          <div className="news-search-box">
-            {isSearchingServer ? (
-              <Loader2 size={14} className="spin-animation" style={{ color: "var(--apple-blue)" }} />
-            ) : (
-              <Search size={14} style={{ color: "var(--text-tertiary)" }} />
-            )}
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={handleKeyDownSearch}
-              placeholder="Search company name, ticker, or topic (Apple, Tesla, NVDA, Nifty)..."
-              className="news-search-input"
-            />
-            {searchQuery && (
+        {/* Right actions: Expandable Search & Refresh */}
+        <div className="news-actions-bar" ref={searchContainerRef}>
+          {isSearchOpen ? (
+            <div className="news-search-expandable open">
+              {isSearchingServer ? (
+                <Loader2 size={14} className="spin-animation" style={{ color: "var(--apple-blue)", flexShrink: 0 }} />
+              ) : (
+                <Search size={14} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
+              )}
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDownSearch}
+                placeholder="Search company or ticker (e.g. Apple, Tesla, NVDA)..."
+                className="news-search-input"
+              />
               <button
-                onClick={handleClearSearch}
-                className="news-search-clear"
-                title="Clear search"
+                onClick={handleCloseSearch}
+                className="news-search-close-btn"
+                title="Close search"
+                aria-label="Close search"
               >
-                ✕
+                <X size={14} />
               </button>
-            )}
-          </div>
+            </div>
+          ) : (
+            <button
+              onClick={handleOpenSearch}
+              className="apple-button news-search-trigger-btn"
+              title="Search news by company or ticker"
+            >
+              <Search size={14} />
+              <span className="news-search-btn-label">Search</span>
+            </button>
+          )}
 
           <button
             onClick={handleRefresh}
@@ -303,7 +353,7 @@ export default function FinanceNewsPage({ onSelectTicker }) {
                 Try searching for company names like "Apple", "Tesla", "Nvidia", "Tata Motors", or standard tickers like "NVDA", "AAPL", "RELIANCE.NS".
               </p>
               <button
-                onClick={handleClearSearch}
+                onClick={handleCloseSearch}
                 className="apple-button apple-button-primary"
               >
                 Clear Search Filter
@@ -313,7 +363,11 @@ export default function FinanceNewsPage({ onSelectTicker }) {
             <>
               {/* Hero Breaking Story Card */}
               {heroArticle && (
-                <article className="news-hero-card apple-glass">
+                <article
+                  className="news-hero-card apple-glass news-card-clickable"
+                  onClick={(e) => handleCardClick(e, heroArticle.link)}
+                  title="Click to read full story"
+                >
                   <div className="news-hero-content">
                     <div className="news-meta-row">
                       <span className="news-breaking-badge">
@@ -334,6 +388,7 @@ export default function FinanceNewsPage({ onSelectTicker }) {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="news-link-overlay"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         {heroArticle.title}
                       </a>
@@ -352,7 +407,10 @@ export default function FinanceNewsPage({ onSelectTicker }) {
                           heroArticle.tickers.map(tickerSym => (
                             <button
                               key={tickerSym}
-                              onClick={() => onSelectTicker && onSelectTicker(tickerSym)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (onSelectTicker) onSelectTicker(tickerSym);
+                              }}
                               className="news-ticker-tag"
                               title={`Analyze ${tickerSym} in Market Intelligence`}
                             >
@@ -370,6 +428,7 @@ export default function FinanceNewsPage({ onSelectTicker }) {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="news-read-btn"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <span>Full Coverage</span>
                         <ArrowUpRight size={14} />
@@ -382,7 +441,12 @@ export default function FinanceNewsPage({ onSelectTicker }) {
               {/* Grid of Remaining Articles */}
               <div className="news-grid">
                 {gridArticles.map((article, index) => (
-                  <article key={article.id || index} className="news-card apple-glass">
+                  <article
+                    key={article.id || index}
+                    className="news-card apple-glass news-card-clickable"
+                    onClick={(e) => handleCardClick(e, article.link)}
+                    title="Click to read full story"
+                  >
                     <div className="news-card-inner">
                       <div className="news-meta-row">
                         <span className="news-publisher">{article.publisher || "Finance News"}</span>
@@ -396,6 +460,7 @@ export default function FinanceNewsPage({ onSelectTicker }) {
                           target="_blank"
                           rel="noopener noreferrer"
                           className="news-card-link"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           {article.title}
                         </a>
@@ -414,7 +479,10 @@ export default function FinanceNewsPage({ onSelectTicker }) {
                             article.tickers.slice(0, 3).map(tickerSym => (
                               <button
                                 key={tickerSym}
-                                onClick={() => onSelectTicker && onSelectTicker(tickerSym)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (onSelectTicker) onSelectTicker(tickerSym);
+                                }}
                                 className="news-ticker-tag"
                                 title={`Analyze ${tickerSym} in Market Intelligence`}
                               >
@@ -432,6 +500,7 @@ export default function FinanceNewsPage({ onSelectTicker }) {
                           rel="noopener noreferrer"
                           className="news-card-external"
                           title="Open original article"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <ExternalLink size={13} />
                         </a>
