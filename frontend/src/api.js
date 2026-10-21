@@ -161,12 +161,13 @@ export async function fetchFinanceNews(category = "all", query = "", limit = 35)
 
   try {
     const res = await fetch(`${endpoint}/api/news?${params.toString()}`, {
-      signal: AbortSignal.timeout(6000)
+      signal: AbortSignal.timeout(7000)
     });
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data.items) && data.items.length > 0) {
-        return data.items;
+      const list = data.items || data.results;
+      if (Array.isArray(list)) {
+        return list;
       }
     }
   } catch (err) {

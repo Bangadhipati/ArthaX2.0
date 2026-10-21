@@ -335,41 +335,84 @@ def health():
 NEWS_CACHE = {}
 NEWS_CACHE_TTL = 180  # 3 minutes
 
+# Comprehensive mapping: Company names and colloquial terms -> Official Tickers
+COMPANY_TICKER_MAP = [
+    # US Tech & Mega Caps
+    ("APPLE", "AAPL"),
+    ("IPHONE", "AAPL"),
+    ("AAPL", "AAPL"),
+    ("NVIDIA", "NVDA"),
+    ("BLACKWELL", "NVDA"),
+    ("NVDA", "NVDA"),
+    ("TESLA", "TSLA"),
+    ("ELON MUSK", "TSLA"),
+    ("CYBERTRUCK", "TSLA"),
+    ("TSLA", "TSLA"),
+    ("MICROSOFT", "MSFT"),
+    ("AZURE", "MSFT"),
+    ("MSFT", "MSFT"),
+    ("AMAZON", "AMZN"),
+    ("AWS", "AMZN"),
+    ("AMZN", "AMZN"),
+    ("GOOGLE", "GOOGL"),
+    ("ALPHABET", "GOOGL"),
+    ("GEMINI", "GOOGL"),
+    ("GOOGL", "GOOGL"),
+    ("META", "META"),
+    ("FACEBOOK", "META"),
+    ("INSTAGRAM", "META"),
+    ("NETFLIX", "NFLX"),
+    ("NFLX", "NFLX"),
+    ("AMD", "AMD"),
+    ("INTEL", "INTC"),
+    ("QUALCOMM", "QCOM"),
+    ("BROADCOM", "AVGO"),
+    ("PALANTIR", "PLTR"),
+    ("PLTR", "PLTR"),
+    ("BOEING", "BA"),
+    ("BA", "BA"),
+    
+    # India & NSE Bluechips
+    ("RELIANCE INDUSTRIES", "RELIANCE.NS"),
+    ("RELIANCE", "RELIANCE.NS"),
+    ("MUKESH AMBANI", "RELIANCE.NS"),
+    ("JIO", "RELIANCE.NS"),
+    ("TATA MOTORS", "TATAMOTORS.NS"),
+    ("TATAMOTORS", "TATAMOTORS.NS"),
+    ("TATA CONSULTANCY", "TCS.NS"),
+    ("TCS", "TCS.NS"),
+    ("TATA", "TATAMOTORS.NS"),
+    ("INFOSYS", "INFY.NS"),
+    ("INFY", "INFY.NS"),
+    ("HDFC BANK", "HDFCBANK.NS"),
+    ("HDFC", "HDFCBANK.NS"),
+    ("ICICI BANK", "ICICIBANK.NS"),
+    ("ICICI", "ICICIBANK.NS"),
+    ("STATE BANK OF INDIA", "SBIN.NS"),
+    ("SBI", "SBIN.NS"),
+    ("NIFTY 50", "^NSEI"),
+    ("NIFTY", "^NSEI"),
+    ("SENSEX", "^BSESN"),
+    
+    # Crypto & Global Benchmarks
+    ("BITCOIN", "BTC-USD"),
+    ("BTC", "BTC-USD"),
+    ("ETHEREUM", "ETH-USD"),
+    ("ETH", "ETH-USD"),
+    ("S&P 500", "^GSPC"),
+    ("SP500", "^GSPC"),
+    ("NASDAQ", "^IXIC"),
+    ("DOW JONES", "^DJI")
+]
+
 def extract_news_tickers(text: str) -> list:
-    """Identifies prominent market asset and ticker mentions."""
+    """Identifies prominent market asset and ticker mentions by company name or ticker symbol."""
     found = []
     text_upper = text.upper()
-    keywords = [
-        ("NVIDIA", "NVDA"),
-        ("NVDA", "NVDA"),
-        ("TESLA", "TSLA"),
-        ("ELON MUSK", "TSLA"),
-        ("TSLA", "TSLA"),
-        ("APPLE", "AAPL"),
-        ("AAPL", "AAPL"),
-        ("MICROSOFT", "MSFT"),
-        ("MSFT", "MSFT"),
-        ("AMAZON", "AMZN"),
-        ("AMZN", "AMZN"),
-        ("GOOGLE", "GOOGL"),
-        ("ALPHABET", "GOOGL"),
-        ("GOOGL", "GOOGL"),
-        ("META", "META"),
-        ("BITCOIN", "BTC-USD"),
-        ("CRYPTO", "BTC-USD"),
-        ("ETHEREUM", "ETH-USD"),
-        ("RELIANCE", "RELIANCE.NS"),
-        ("TATA", "TATAMOTORS.NS"),
-        ("INFOSYS", "INFY.NS"),
-        ("NIFTY", "^NSEI"),
-        ("SENSEX", "^BSESN"),
-        ("S&P 500", "^GSPC"),
-        ("NASDAQ", "^IXIC"),
-        ("DOW", "^DJI"),
-        ("BOEING", "BA")
-    ]
-    for kw, sym in keywords:
-        if kw in text_upper and sym not in found:
+    for kw, sym in COMPANY_TICKER_MAP:
+        # Match as whole word/phrase to avoid substring collisions
+        pattern = r"\b" + re.escape(kw) + r"\b"
+        if re.search(pattern, text_upper) and sym not in found:
             found.append(sym)
             if len(found) >= 3:
                 break
@@ -400,20 +443,27 @@ def format_relative_time(pub_date_str: str) -> str:
 @app.get("/api/news")
 def get_financial_news(
     category: str = Query("all", description="Category: all, markets, tech, india, crypto"),
-    q: Optional[str] = Query(None, description="Optional keyword or ticker search query"),
+    q: Optional[str] = Query(None, description="Optional company name, keyword, or ticker search query"),
     limit: int = Query(35, ge=1, le=100)
 ):
     """
     Fetches real-time institutional financial news from verified global feeds
-    with auto-detected tickers, publisher attribution, and relative publish timestamps.
+    with auto-detected tickers, company name search, publisher attribution, and relative timestamps.
     100% free with 0 API key dependencies.
     """
-    cache_key = f"{category}_{q or ''}_{limit}"
+    q_clean = q.strip() if q else ""
+    cache_key = f"{category}_{q_clean.lower()}_{limit}"
     now_ts = time.time()
     if cache_key in NEWS_CACHE:
         cached = NEWS_CACHE[cache_key]
         if now_ts - cached["timestamp"] < NEWS_CACHE_TTL:
-            return {"category": category, "count": len(cached["data"]), "results": cached["data"]}
+            return {
+                "category": category,
+                "query": q_clean,
+                "count": len(cached["data"]),
+                "items": cached["data"],
+                "results": cached["data"]
+            }
 
     # Feed endpoints
     feeds = {
@@ -424,9 +474,13 @@ def get_financial_news(
         "crypto": "https://news.google.com/rss/search?q=crypto+bitcoin+fed+interest+rates+when:3d&hl=en-US&gl=US&ceid=US:en"
     }
 
-    if q and q.strip():
-        clean_q = urllib.parse.quote_plus(f"{q.strip()} stock finance when:7d")
-        feed_url = f"https://news.google.com/rss/search?q={clean_q}&hl=en-US&gl=US&ceid=US:en"
+    if q_clean:
+        # Search by company name or ticker in finance domain
+        is_india = any(k in q_clean.lower() for k in ["tata", "reliance", "nifty", "sensex", "hdfc", "infosys", "sbi", ".ns", "bse"])
+        gl_param = "IN" if is_india else "US"
+        hl_param = "en-IN" if is_india else "en-US"
+        clean_q = urllib.parse.quote_plus(f"{q_clean} stock OR market OR business")
+        feed_url = f"https://news.google.com/rss/search?q={clean_q}&hl={hl_param}&gl={gl_param}&ceid={gl_param}:en"
     else:
         feed_url = feeds.get(category.lower(), feeds["all"])
 
@@ -441,6 +495,14 @@ def get_financial_news(
             raw_title = item.find("title").text if item.find("title") is not None else ""
             link = item.find("link").text if item.find("link") is not None else ""
             pub_date = item.find("pubDate").text if item.find("pubDate") is not None else ""
+            desc = item.find("description").text if item.find("description") is not None else ""
+
+            # Extract clean summary by removing HTML tags if present
+            clean_summary = ""
+            if desc:
+                clean_summary = re.sub(r"<[^>]+>", "", desc).strip()
+                if clean_summary.startswith(raw_title):
+                    clean_summary = clean_summary[len(raw_title):].strip()
 
             parts = raw_title.rsplit(" - ", 1)
             title = parts[0].strip() if len(parts) > 1 else raw_title.strip()
@@ -449,14 +511,18 @@ def get_financial_news(
             time_ago = format_relative_time(pub_date)
             tickers = extract_news_tickers(title)
 
+            # If user searched a specific company/ticker and none was tagged, check search query
+            if not tickers and q_clean:
+                tickers = extract_news_tickers(q_clean)
+
             # Assign topic badge
             if category == "all":
                 t_lower = title.lower()
                 if any(k in t_lower for k in ["bitcoin", "crypto", "fed", "rate", "inflation"]):
                     cat_tag = "Crypto & Macro"
-                elif any(k in t_lower for k in ["ai", "tech", "nvidia", "chip", "semiconductor", "apple"]):
+                elif any(k in t_lower for k in ["ai", "tech", "nvidia", "chip", "semiconductor", "apple", "tesla", "microsoft"]):
                     cat_tag = "Tech & AI"
-                elif any(k in t_lower for k in ["nifty", "sensex", "india", "rupee", "sebi", "rbi"]):
+                elif any(k in t_lower for k in ["nifty", "sensex", "india", "rupee", "sebi", "rbi", "tata", "reliance"]):
                     cat_tag = "India & NSE"
                 else:
                     cat_tag = "Global Markets"
@@ -475,18 +541,33 @@ def get_financial_news(
                 "publisher": publisher,
                 "link": link,
                 "timeAgo": time_ago,
+                "relativeTime": time_ago,
                 "pubDate": pub_date,
+                "publishedAt": pub_date,
                 "tickers": tickers,
-                "category": cat_tag
+                "category": cat_tag,
+                "summary": clean_summary if clean_summary and len(clean_summary) > 20 else title
             })
 
         NEWS_CACHE[cache_key] = {"timestamp": now_ts, "data": articles}
     except Exception as e:
         if cache_key in NEWS_CACHE:
-            return {"category": category, "count": len(NEWS_CACHE[cache_key]["data"]), "results": NEWS_CACHE[cache_key]["data"]}
-        return {"category": category, "count": 0, "results": [], "error": str(e)}
+            return {
+                "category": category,
+                "query": q_clean,
+                "count": len(NEWS_CACHE[cache_key]["data"]),
+                "items": NEWS_CACHE[cache_key]["data"],
+                "results": NEWS_CACHE[cache_key]["data"]
+            }
+        return {"category": category, "query": q_clean, "count": 0, "items": [], "results": [], "error": str(e)}
 
-    return {"category": category, "count": len(articles), "results": articles}
+    return {
+        "category": category,
+        "query": q_clean,
+        "count": len(articles),
+        "items": articles,
+        "results": articles
+    }
 
 
 @app.get("/api/search")

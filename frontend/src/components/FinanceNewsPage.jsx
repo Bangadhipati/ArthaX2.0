@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Newspaper,
   ExternalLink,
@@ -10,9 +10,9 @@ import {
   Cpu,
   Building2,
   Coins,
-  Sparkles,
   Flame,
-  ArrowUpRight
+  ArrowUpRight,
+  Loader2
 } from "lucide-react";
 import { fetchFinanceNews } from "../api";
 import { MOCK_FINANCE_NEWS } from "../mockData";
@@ -25,57 +25,166 @@ const CATEGORIES = [
   { id: "crypto", label: "Crypto & Macro", icon: Coins }
 ];
 
+// Bidirectional company name & ticker alias mapping
+const COMPANY_ALIASES = {
+  apple: ["AAPL", "apple", "iphone", "tim cook"],
+  aapl: ["AAPL", "apple"],
+  tesla: ["TSLA", "tesla", "elon musk", "ev"],
+  tsla: ["TSLA", "tesla"],
+  nvidia: ["NVDA", "nvidia", "jensen huang", "blackwell", "ai chips"],
+  nvda: ["NVDA", "nvidia"],
+  microsoft: ["MSFT", "microsoft", "azure", "satya nadella"],
+  msft: ["MSFT", "microsoft"],
+  google: ["GOOGL", "google", "alphabet", "gemini", "sundar"],
+  alphabet: ["GOOGL", "google", "alphabet"],
+  googl: ["GOOGL", "google", "alphabet"],
+  amazon: ["AMZN", "amazon", "aws"],
+  amzn: ["AMZN", "amazon"],
+  meta: ["META", "meta", "facebook", "instagram"],
+  facebook: ["META", "meta"],
+  netflix: ["NFLX", "netflix"],
+  nflx: ["NFLX", "netflix"],
+  amd: ["AMD", "amd"],
+  intel: ["INTC", "intel"],
+  palantir: ["PLTR", "palantir"],
+  pltr: ["PLTR", "palantir"],
+  boeing: ["BA", "boeing"],
+  reliance: ["RELIANCE.NS", "reliance", "ambani", "jio"],
+  tata: ["TATAMOTORS.NS", "TCS.NS", "tata", "tata motors", "tcs"],
+  "tata motors": ["TATAMOTORS.NS", "tata motors"],
+  tcs: ["TCS.NS", "tcs", "tata consultancy"],
+  infosys: ["INFY.NS", "infosys"],
+  infy: ["INFY.NS", "infosys"],
+  hdfc: ["HDFCBANK.NS", "hdfc", "hdfc bank"],
+  icici: ["ICICIBANK.NS", "icici"],
+  sbi: ["SBIN.NS", "sbi", "state bank"],
+  nifty: ["^NSEI", "nifty", "nse"],
+  sensex: ["^BSESN", "sensex", "bse"],
+  bitcoin: ["BTC-USD", "bitcoin", "crypto", "btc"],
+  btc: ["BTC-USD", "bitcoin", "btc"]
+};
+
 export default function FinanceNewsPage({ onSelectTicker }) {
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [news, setNews] = useState(MOCK_FINANCE_NEWS);
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSearchingServer, setIsSearchingServer] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
-  const loadNews = async (cat = activeCategory) => {
+  const searchDebounceRef = useRef(null);
+
+  // Fetch news from API (with category and optional server query)
+  const loadNews = async (cat = activeCategory, query = "") => {
     setLoading(true);
     try {
-      const items = await fetchFinanceNews(cat, "", 40);
+      const items = await fetchFinanceNews(cat, query, 40);
       if (items && items.length > 0) {
         setNews(items);
         setLastUpdated(new Date());
-      } else {
-        // Fallback filter on mock news
+      } else if (!query) {
+        // Fallback filter on mock news only if general feed fails
         if (cat === "all") {
           setNews(MOCK_FINANCE_NEWS);
         } else {
           setNews(MOCK_FINANCE_NEWS.filter(n => n.category === cat || !n.category));
         }
+      } else {
+        // Empty query results from server
+        setNews([]);
       }
     } catch (err) {
       console.warn("Failed to fetch news:", err);
-      setNews(MOCK_FINANCE_NEWS);
+      if (!query) setNews(MOCK_FINANCE_NEWS);
     } finally {
       setLoading(false);
       setIsRefreshing(false);
+      setIsSearchingServer(false);
     }
   };
 
+  // Initial load and category changes
   useEffect(() => {
-    loadNews(activeCategory);
+    setSearchQuery("");
+    loadNews(activeCategory, "");
   }, [activeCategory]);
+
+  // Debounced server search for live company queries
+  useEffect(() => {
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+
+    const trimmed = searchQuery.trim();
+    if (!trimmed) {
+      // Re-fetch base category news when search is cleared
+      return;
+    }
+
+    searchDebounceRef.current = setTimeout(() => {
+      setIsSearchingServer(true);
+      loadNews(activeCategory, trimmed);
+    }, 550);
+
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+    };
+  }, [searchQuery, activeCategory]);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    loadNews(activeCategory);
+    loadNews(activeCategory, searchQuery.trim());
   };
 
-  // Filter news client-side for instant responsive searching
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    loadNews(activeCategory, "");
+  };
+
+  const handleKeyDownSearch = (e) => {
+    if (e.key === "Enter") {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+      setIsSearchingServer(true);
+      loadNews(activeCategory, searchQuery.trim());
+    }
+  };
+
+  // Client-side instant filter: matches headline, summary, publisher, tickers, OR company name aliases
   const filteredNews = useMemo(() => {
     if (!searchQuery.trim()) return news;
     const q = searchQuery.toLowerCase().trim();
+
+    // Check if query is an alias for known tickers/companies
+    const aliasKeywords = COMPANY_ALIASES[q] || [q];
+
     return news.filter(item => {
-      const titleMatch = item.title?.toLowerCase().includes(q);
-      const summaryMatch = item.summary?.toLowerCase().includes(q);
-      const publisherMatch = item.publisher?.toLowerCase().includes(q);
-      const tickerMatch = item.tickers?.some(t => t.toLowerCase().includes(q));
-      return titleMatch || summaryMatch || publisherMatch || tickerMatch;
+      const titleLower = (item.title || "").toLowerCase();
+      const summaryLower = (item.summary || "").toLowerCase();
+      const publisherLower = (item.publisher || "").toLowerCase();
+      const tickersUpper = (item.tickers || []).map(t => t.toUpperCase());
+
+      // Direct text matches
+      const directMatch =
+        titleLower.includes(q) ||
+        summaryLower.includes(q) ||
+        publisherLower.includes(q) ||
+        tickersUpper.some(t => t.toLowerCase().includes(q));
+
+      if (directMatch) return true;
+
+      // Alias matches (e.g. searching "Apple" matches articles with ticker AAPL, searching "Tesla" matches TSLA)
+      return aliasKeywords.some(keyword => {
+        const kwLower = keyword.toLowerCase();
+        const kwUpper = keyword.toUpperCase();
+        return (
+          titleLower.includes(kwLower) ||
+          summaryLower.includes(kwLower) ||
+          tickersUpper.includes(kwUpper)
+        );
+      });
     });
   }, [news, searchQuery]);
 
@@ -100,7 +209,7 @@ export default function FinanceNewsPage({ onSelectTicker }) {
                 </div>
               </div>
               <p className="news-subtitle">
-                Institutional market feeds from Bloomberg, WSJ, Reuters, CNBC & FT • 100% Free & Real-Time
+                Institutional feeds from Bloomberg, WSJ, Reuters, CNBC & FT • Real-Time Company & Market Intelligence
               </p>
             </div>
           </div>
@@ -109,17 +218,22 @@ export default function FinanceNewsPage({ onSelectTicker }) {
         {/* Right actions: search & refresh */}
         <div className="news-actions-bar">
           <div className="news-search-box">
-            <Search size={14} style={{ color: "var(--text-tertiary)" }} />
+            {isSearchingServer ? (
+              <Loader2 size={14} className="spin-animation" style={{ color: "var(--apple-blue)" }} />
+            ) : (
+              <Search size={14} style={{ color: "var(--text-tertiary)" }} />
+            )}
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search news, topics, tickers ($NVDA, Fed, AI)..."
+              onKeyDown={handleKeyDownSearch}
+              placeholder="Search company name, ticker, or topic (Apple, Tesla, NVDA, Nifty)..."
               className="news-search-input"
             />
             {searchQuery && (
               <button
-                onClick={() => setSearchQuery("")}
+                onClick={handleClearSearch}
                 className="news-search-clear"
                 title="Clear search"
               >
@@ -185,14 +299,14 @@ export default function FinanceNewsPage({ onSelectTicker }) {
               <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#ffffff", marginBottom: "6px" }}>
                 No news found matching "{searchQuery}"
               </h3>
-              <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "16px" }}>
-                Try searching for broader terms like "tech", "fed", "inflation", or reset your search filter.
+              <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "16px", maxWidth: "460px" }}>
+                Try searching for company names like "Apple", "Tesla", "Nvidia", "Tata Motors", or standard tickers like "NVDA", "AAPL", "RELIANCE.NS".
               </p>
               <button
-                onClick={() => setSearchQuery("")}
+                onClick={handleClearSearch}
                 className="apple-button apple-button-primary"
               >
-                Clear Filter
+                Clear Search Filter
               </button>
             </div>
           ) : (
@@ -210,7 +324,7 @@ export default function FinanceNewsPage({ onSelectTicker }) {
                       <span className="news-meta-dot">•</span>
                       <span className="news-time">
                         <Clock size={12} style={{ display: "inline", verticalAlign: "middle", marginRight: "3px" }} />
-                        {heroArticle.relativeTime || "Just now"}
+                        {heroArticle.relativeTime || heroArticle.timeAgo || "Just now"}
                       </span>
                     </div>
 
@@ -225,14 +339,14 @@ export default function FinanceNewsPage({ onSelectTicker }) {
                       </a>
                     </h2>
 
-                    {heroArticle.summary && (
+                    {heroArticle.summary && heroArticle.summary !== heroArticle.title && (
                       <p className="news-hero-summary">
                         {heroArticle.summary}
                       </p>
                     )}
 
                     <div className="news-footer-row">
-                      {/* Ticker Badges */}
+                      {/* Clean Ticker Badges WITHOUT dollar sign */}
                       <div className="news-tickers-list">
                         {heroArticle.tickers && heroArticle.tickers.length > 0 ? (
                           heroArticle.tickers.map(tickerSym => (
@@ -243,11 +357,11 @@ export default function FinanceNewsPage({ onSelectTicker }) {
                               title={`Analyze ${tickerSym} in Market Intelligence`}
                             >
                               <TrendingUp size={11} />
-                              <span>${tickerSym}</span>
+                              <span>{tickerSym}</span>
                             </button>
                           ))
                         ) : (
-                          <span className="news-general-tag">Market Overview</span>
+                          <span className="news-general-tag">Market Wire</span>
                         )}
                       </div>
 
@@ -273,7 +387,7 @@ export default function FinanceNewsPage({ onSelectTicker }) {
                       <div className="news-meta-row">
                         <span className="news-publisher">{article.publisher || "Finance News"}</span>
                         <span className="news-meta-dot">•</span>
-                        <span className="news-time">{article.relativeTime || "Recent"}</span>
+                        <span className="news-time">{article.relativeTime || article.timeAgo || "Recent"}</span>
                       </div>
 
                       <h3 className="news-card-title">
@@ -287,13 +401,14 @@ export default function FinanceNewsPage({ onSelectTicker }) {
                         </a>
                       </h3>
 
-                      {article.summary && (
+                      {article.summary && article.summary !== article.title && (
                         <p className="news-card-summary">
                           {article.summary}
                         </p>
                       )}
 
                       <div className="news-card-footer">
+                        {/* Clean Ticker Badges WITHOUT dollar sign */}
                         <div className="news-tickers-list">
                           {article.tickers && article.tickers.length > 0 ? (
                             article.tickers.slice(0, 3).map(tickerSym => (
@@ -303,7 +418,7 @@ export default function FinanceNewsPage({ onSelectTicker }) {
                                 className="news-ticker-tag"
                                 title={`Analyze ${tickerSym} in Market Intelligence`}
                               >
-                                ${tickerSym}
+                                {tickerSym}
                               </button>
                             ))
                           ) : (
