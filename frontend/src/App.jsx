@@ -34,6 +34,7 @@ export default function App() {
   const [selectedRange, setSelectedRange] = useState("1y");
   const [forecastYears, setForecastYears] = useState(2);
   const [forecastHorizon, setForecastHorizon] = useState("2y");
+  const [newsLoading, setNewsLoading] = useState(false);
 
   // Keep URL hash and localStorage in sync with active page
   useEffect(() => {
@@ -234,6 +235,7 @@ export default function App() {
           onSelectPage={setActivePage}
           mobileOpen={mobileSidebarOpen}
           onCloseMobile={() => setMobileSidebarOpen(false)}
+          newsLoading={newsLoading}
         />
 
         {/* Main Content Area (Shifted to right on big screens) */}
@@ -244,6 +246,7 @@ export default function App() {
                 handleSelectTicker(sym);
                 setActivePage("market-intelligence");
               }}
+              onLoadingChange={setNewsLoading}
             />
           ) : activePage !== "market-intelligence" ? (
             <ComingSoonPage
