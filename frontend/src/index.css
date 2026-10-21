@@ -2143,16 +2143,27 @@ input[type="range"].cupertino-slider::-webkit-slider-thumb:hover {
   border-radius: 8px;
   background: rgba(10, 132, 255, 0.09);
   border: 1px solid rgba(10, 132, 255, 0.24);
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   flex-shrink: 0;
   min-height: 32px;
   box-sizing: border-box;
 }
 
-.news-read-btn:hover {
-  background: rgba(10, 132, 255, 0.2);
+.news-hero-card:hover .news-read-btn,
+.news-hero-card.news-card-clickable:hover .news-read-btn {
+  background: rgba(10, 132, 255, 0.22);
   color: #ffffff;
   border-color: var(--apple-blue);
+  box-shadow: 0 4px 14px rgba(10, 132, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.news-read-btn:hover {
+  background: var(--apple-blue);
+  color: #ffffff;
+  border-color: var(--apple-blue);
+  box-shadow: 0 4px 18px rgba(10, 132, 255, 0.45);
+  transform: translateY(-2px);
 }
 
 .news-read-btn:active {
@@ -2280,20 +2291,34 @@ input[type="range"].cupertino-slider::-webkit-slider-thumb:hover {
   height: 32px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   color: var(--text-tertiary);
   text-decoration: none;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   flex-shrink: 0;
 }
 
-.news-card-external:hover {
-  background: rgba(10, 132, 255, 0.16);
+/* Card hover activates explore button hover state */
+.news-card:hover .news-card-external,
+.news-card.news-card-clickable:hover .news-card-external {
+  background: rgba(10, 132, 255, 0.18);
   color: var(--apple-blue);
+  border-color: rgba(10, 132, 255, 0.38);
   transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(10, 132, 255, 0.22);
+}
+
+/* Direct hover elevates explore button further */
+.news-card-external:hover {
+  background: var(--apple-blue) !important;
+  color: #ffffff !important;
+  border-color: var(--apple-blue) !important;
+  transform: translateY(-2px) scale(1.05) !important;
+  box-shadow: 0 4px 14px rgba(10, 132, 255, 0.45) !important;
 }
 
 .news-card-external:active {
-  transform: scale(0.95);
+  transform: scale(0.95) !important;
 }
 
 /* Empty State */
