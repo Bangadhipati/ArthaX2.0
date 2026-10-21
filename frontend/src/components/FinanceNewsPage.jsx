@@ -39,6 +39,20 @@ const cleanNewsSummary = (text, title = "") => {
   return clean;
 };
 
+// Calculates exact relative time against client's live clock (e.g. '4m ago', '35m ago')
+export const getDynamicTimeAgo = (pubDateOrTs, fallback = "Recent") => {
+  if (!pubDateOrTs) return fallback;
+  const ts = typeof pubDateOrTs === "number" ? pubDateOrTs : new Date(pubDateOrTs).getTime();
+  if (isNaN(ts) || ts <= 0) return fallback;
+  const now = Date.now();
+  const diffSec = Math.max(0, Math.floor((now - (ts > 1e11 ? ts : ts * 1000)) / 1000));
+  if (diffSec < 60) return "Just now";
+  if (diffSec < 3600) return `${Math.max(1, Math.floor(diffSec / 60))}m ago`;
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+  if (diffSec < 172800) return "Yesterday";
+  return `${Math.floor(diffSec / 86400)}d ago`;
+};
+
 const CATEGORIES = [
   { id: "all", label: "All News", icon: Globe },
   { id: "markets", label: "Global Markets", icon: TrendingUp },
@@ -171,31 +185,41 @@ export default function FinanceNewsPage({ onSelectTicker, onLoadingChange }) {
   }, [isSearchOpen, searchQuery]);
 
   // Fetch real-time news from API (with category and optional server query)
-  const loadNews = async (cat = activeCategory, query = "") => {
-    setLoading(true);
+  const loadNews = async (cat = activeCategory, query = "", isInitial = true) => {
+    if (isInitial) setLoading(true);
     try {
       const items = await fetchFinanceNews(cat, query, 40);
       if (items && items.length > 0) {
         setNews(items);
         setLastUpdated(new Date());
-      } else {
+      } else if (isInitial) {
         setNews([]);
       }
     } catch (err) {
       console.warn("Failed to fetch live news:", err);
-      setNews([]);
+      if (isInitial) setNews([]);
     } finally {
-      setLoading(false);
+      if (isInitial) setLoading(false);
       setIsRefreshing(false);
       setIsSearchingServer(false);
     }
   };
 
+  // Auto-refresh breaking wire every 45 seconds so live updates stream in continually
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (!isSearchOpen && !searchQuery.trim()) {
+        loadNews(activeCategory, "", false);
+      }
+    }, 45000);
+    return () => clearInterval(timer);
+  }, [activeCategory, isSearchOpen, searchQuery]);
+
   // Initial load and category changes
   useEffect(() => {
     setSearchQuery("");
     setIsSearchOpen(false);
-    loadNews(activeCategory, "");
+    loadNews(activeCategory, "", true);
   }, [activeCategory]);
 
   // Debounced server search for live company queries
@@ -223,7 +247,7 @@ export default function FinanceNewsPage({ onSelectTicker, onLoadingChange }) {
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    loadNews(activeCategory, searchQuery.trim());
+    loadNews(activeCategory, searchQuery.trim(), false);
   };
 
   const handleOpenSearch = () => {
@@ -400,7 +424,7 @@ export default function FinanceNewsPage({ onSelectTicker, onLoadingChange }) {
         </div>
         <div className="news-timestamp">
           <Clock size={12} />
-          <span>Updated {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+          <span>Updated {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>
         </div>
       </div>
 
@@ -495,7 +519,7 @@ export default function FinanceNewsPage({ onSelectTicker, onLoadingChange }) {
                       <span className="news-meta-dot">•</span>
                       <span className="news-time">
                         <Clock size={12} style={{ display: "inline", verticalAlign: "middle", marginRight: "3px" }} />
-                        {heroArticle.relativeTime || heroArticle.timeAgo || "Just now"}
+                        {getDynamicTimeAgo(heroArticle.timestamp || heroArticle.publishedAt, heroArticle.relativeTime)}
                       </span>
                     </div>
 
@@ -572,7 +596,7 @@ export default function FinanceNewsPage({ onSelectTicker, onLoadingChange }) {
                       <div className="news-meta-row">
                         <span className="news-publisher">{article.publisher || "Finance News"}</span>
                         <span className="news-meta-dot">•</span>
-                        <span className="news-time">{article.relativeTime || article.timeAgo || "Recent"}</span>
+                        <span className="news-time">{getDynamicTimeAgo(article.timestamp || article.publishedAt, article.relativeTime)}</span>
                       </div>
 
                       <h3 className="news-card-title">

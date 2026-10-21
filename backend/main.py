@@ -768,7 +768,7 @@ def format_relative_time(pub_date_str: str) -> str:
 
 
 NEWS_CACHE = {}
-NEWS_CACHE_TTL = 120  # 2 minutes cache for real-time news freshness
+NEWS_CACHE_TTL = 30  # 30 seconds cache for real-time live wire freshness
 
 
 @app.get("/api/news")
@@ -797,29 +797,43 @@ def get_financial_news(
                 "results": cached["data"]
             }
 
-    # Feed endpoints
+    # Real-time breaking feed endpoints
     feeds = {
-        "all": "https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=en-US&gl=US&ceid=US:en",
-        "markets": "https://news.google.com/rss/search?q=stock+market+wall+street+when:3d&hl=en-US&gl=US&ceid=US:en",
-        "tech": "https://news.google.com/rss/search?q=tech+stocks+nvidia+ai+when:3d&hl=en-US&gl=US&ceid=US:en",
-        "india": "https://news.google.com/rss/search?q=nifty+sensex+stock+market+india+when:3d&hl=en-IN&gl=IN&ceid=IN:en",
-        "crypto": "https://news.google.com/rss/search?q=crypto+bitcoin+fed+interest+rates+when:3d&hl=en-US&gl=US&ceid=US:en"
+        # Ultra-fresh live wire: breaking market stories from the last 2 hours
+        "all_wire": "https://news.google.com/rss/search?q=when:2h+(stocks+OR+shares+OR+market+OR+wall+street+OR+trading+OR+earnings)&hl=en-US&gl=US&ceid=US:en",
+        # Fresh 4-hour business wire
+        "all_breaking": "https://news.google.com/rss/search?q=when:4h+(finance+OR+stocks+OR+earnings+OR+business)&hl=en-US&gl=US&ceid=US:en",
+        # Global markets
+        "markets": "https://news.google.com/rss/search?q=when:4h+(stock+market+OR+wall+street+OR+trading+OR+shares)&hl=en-US&gl=US&ceid=US:en",
+        # Tech & AI
+        "tech": "https://news.google.com/rss/search?q=when:4h+(tech+stocks+OR+nvidia+OR+ai+OR+semiconductor+OR+chips)&hl=en-US&gl=US&ceid=US:en",
+        # Indian markets & NSE
+        "india": "https://news.google.com/rss/search?q=when:1d+(nifty+OR+sensex+OR+stock+market+india)&hl=en-IN&gl=IN&ceid=IN:en",
+        # Crypto & Macro
+        "crypto": "https://news.google.com/rss/search?q=when:6h+(crypto+OR+bitcoin+OR+fed+OR+interest+rates)&hl=en-US&gl=US&ceid=US:en"
     }
 
     raw_feed_urls = []
     if q_clean:
-        # Search by company name or ticker in finance domain
+        # Search by company name or ticker in finance domain with recent 2d constraint
         is_india = any(k in q_clean.lower() for k in ["tata", "reliance", "nifty", "sensex", "hdfc", "infosys", "sbi", ".ns", "bse"])
         gl_param = "IN" if is_india else "US"
         hl_param = "en-IN" if is_india else "en-US"
-        clean_q = urllib.parse.quote_plus(f"{q_clean} stock OR market OR business")
+        clean_q = urllib.parse.quote_plus(f"when:2d ({q_clean} stock OR market OR business)")
         raw_feed_urls.append((f"https://news.google.com/rss/search?q={clean_q}&hl={hl_param}&gl={gl_param}&ceid={gl_param}:en", False))
     elif category == "all":
-        # For 'all', pull both top Indian market news AND global business news so Indian news has high visibility
+        # For 'all', pull breaking wire from last 2h, fresh Indian market news, and 4h business updates
+        raw_feed_urls.append((feeds["all_wire"], False))
         raw_feed_urls.append((feeds["india"], True))
-        raw_feed_urls.append((feeds["all"], False))
+        raw_feed_urls.append((feeds["all_breaking"], False))
+    elif category == "markets":
+        raw_feed_urls.append((feeds["markets"], False))
+        raw_feed_urls.append(("https://news.google.com/rss/search?q=when:1d+(wall+street+OR+stock+market)&hl=en-US&gl=US&ceid=US:en", False))
+    elif category == "tech":
+        raw_feed_urls.append((feeds["tech"], False))
+        raw_feed_urls.append(("https://news.google.com/rss/search?q=when:1d+(tech+stocks+OR+ai+stocks)&hl=en-US&gl=US&ceid=US:en", False))
     else:
-        raw_feed_urls.append((feeds.get(category.lower(), feeds["all"]), category == "india"))
+        raw_feed_urls.append((feeds.get(category.lower(), feeds["all_wire"]), category == "india"))
 
     articles = []
     seen_titles = set()
@@ -885,7 +899,7 @@ def get_financial_news(
 
                 # Contextual thematic fallback so every card gets relevant clickable ticker buttons
                 if not tickers:
-                    lower_comb = combined_text.lower()
+                    lower_comb = clean_searchable_text.lower()
                     if is_indian_feed or any(k in lower_comb for k in ["india", "nifty", "sensex", "dalal", "rupee", "sebi", "rbi"]):
                         tickers = ["NIFTY", "SENSEX"]
                     elif any(k in lower_comb for k in ["bitcoin", "crypto", "ether", "blockchain", "solana"]):
