@@ -542,30 +542,8 @@ export default function FinanceNewsPage({ onSelectTicker, onLoadingChange }) {
                     )}
 
                     <div className="news-footer-row">
-                      {/* Clean Ticker Badges WITHOUT dollar sign or caret ^ */}
                       <div className="news-tickers-list">
-                        {heroArticle.tickers && heroArticle.tickers.length > 0 ? (
-                          heroArticle.tickers.map(tickerSym => {
-                            const cleanSym = tickerSym.replace(/^\^/, "");
-                            const displayLabel = formatTickerDisplay(tickerSym);
-                            return (
-                              <button
-                                key={tickerSym}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (onSelectTicker) onSelectTicker(cleanSym);
-                                }}
-                                className="news-ticker-tag"
-                                title={`Analyze ${displayLabel} in Market Intelligence`}
-                              >
-                                <TrendingUp size={11} />
-                                <span>{displayLabel}</span>
-                              </button>
-                            );
-                          })
-                        ) : (
-                          <span className="news-general-tag">Market Wire</span>
-                        )}
+                        <span className="news-general-tag">{heroArticle.category || "Top Story"}</span>
                       </div>
 
                       <a
@@ -618,29 +596,8 @@ export default function FinanceNewsPage({ onSelectTicker, onLoadingChange }) {
                       )}
 
                       <div className="news-card-footer">
-                        {/* Clean Ticker Badges WITHOUT dollar sign or caret ^ */}
                         <div className="news-tickers-list">
-                          {article.tickers && article.tickers.length > 0 ? (
-                            article.tickers.slice(0, 3).map(tickerSym => {
-                              const cleanSym = tickerSym.replace(/^\^/, "");
-                              const displayLabel = formatTickerDisplay(tickerSym);
-                              return (
-                                <button
-                                  key={tickerSym}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (onSelectTicker) onSelectTicker(cleanSym);
-                                  }}
-                                  className="news-ticker-tag"
-                                  title={`Analyze ${displayLabel} in Market Intelligence`}
-                                >
-                                  {displayLabel}
-                                </button>
-                              );
-                            })
-                          ) : (
-                            <span className="news-general-tag">Markets</span>
-                          )}
+                          <span className="news-general-tag">{article.category || "Markets"}</span>
                         </div>
 
                         <a

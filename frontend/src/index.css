@@ -2117,11 +2117,17 @@ input[type="range"].cupertino-slider::-webkit-slider-thumb:hover {
 }
 
 .news-general-tag {
-  font-size: 11px;
-  color: var(--text-tertiary);
-  padding: 3px 8px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.03);
+  display: inline-flex;
+  align-items: center;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  color: var(--text-secondary);
+  padding: 3.5px 10px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  user-select: none;
 }
 
 .news-read-btn {
