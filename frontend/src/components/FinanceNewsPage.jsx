@@ -80,13 +80,25 @@ const COMPANY_ALIASES = {
   hdfc: ["HDFCBANK.NS", "hdfc", "hdfc bank"],
   icici: ["ICICIBANK.NS", "icici"],
   sbi: ["SBIN.NS", "sbi", "state bank"],
-  nifty: ["^NSEI", "nifty", "nse"],
-  sensex: ["^BSESN", "sensex", "bse"],
+  nifty: ["NIFTY", "nifty", "nse", "nifty 50"],
+  sensex: ["SENSEX", "sensex", "bse"],
   bitcoin: ["BTC-USD", "bitcoin", "crypto", "btc"],
   btc: ["BTC-USD", "bitcoin", "btc"]
 };
 
-export default function FinanceNewsPage({ onSelectTicker }) {
+// Formats ticker badges to display clean market names without technical carets (^)
+export const formatTickerDisplay = (sym) => {
+  if (!sym) return "";
+  const clean = sym.replace(/^\^/, "").toUpperCase();
+  if (clean === "NSEI" || clean === "NIFTY" || clean === "NIFTY50") return "NIFTY 50";
+  if (clean === "BSESN" || clean === "SENSEX" || clean === "BSE") return "SENSEX";
+  if (clean === "GSPC" || clean === "SP500" || clean === "S&P 500") return "S&P 500";
+  if (clean === "IXIC" || clean === "NASDAQ") return "NASDAQ";
+  if (clean === "DJI" || clean === "DOW") return "DOW JONES";
+  return sym.replace(/^\^/, "");
+};
+
+export default function FinanceNewsPage({ onSelectTicker, onLoadingChange }) {
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -99,6 +111,13 @@ export default function FinanceNewsPage({ onSelectTicker }) {
   const searchDebounceRef = useRef(null);
   const searchInputRef = useRef(null);
   const searchContainerRef = useRef(null);
+
+  // Synchronize loading and refreshing status with parent (Sidebar badge)
+  useEffect(() => {
+    if (onLoadingChange) {
+      onLoadingChange(loading || isRefreshing);
+    }
+  }, [loading, isRefreshing, onLoadingChange]);
 
   // Auto-focus search input when opened
   useEffect(() => {
@@ -268,10 +287,17 @@ export default function FinanceNewsPage({ onSelectTicker }) {
           <div className="news-title-text-col">
             <div className="news-title-row">
               <h1 className="news-main-title">Financial Intelligence & Global News</h1>
-              <div className="news-live-badge">
-                <div className="breathing-dot" style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--apple-green)" }} />
-                <span>LIVE WIRE</span>
-              </div>
+              {loading || isRefreshing ? (
+                <div className="news-live-badge offline" title="Updating news feeds...">
+                  <div className="breathing-dot-red" />
+                  <span>OFFLINE</span>
+                </div>
+              ) : (
+                <div className="news-live-badge" title="Live wire active">
+                  <div className="breathing-dot" style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--apple-green)" }} />
+                  <span>LIVE</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -464,23 +490,27 @@ export default function FinanceNewsPage({ onSelectTicker }) {
                     )}
 
                     <div className="news-footer-row">
-                      {/* Clean Ticker Badges WITHOUT dollar sign */}
+                      {/* Clean Ticker Badges WITHOUT dollar sign or caret ^ */}
                       <div className="news-tickers-list">
                         {heroArticle.tickers && heroArticle.tickers.length > 0 ? (
-                          heroArticle.tickers.map(tickerSym => (
-                            <button
-                              key={tickerSym}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (onSelectTicker) onSelectTicker(tickerSym);
-                              }}
-                              className="news-ticker-tag"
-                              title={`Analyze ${tickerSym} in Market Intelligence`}
-                            >
-                              <TrendingUp size={11} />
-                              <span>{tickerSym}</span>
-                            </button>
-                          ))
+                          heroArticle.tickers.map(tickerSym => {
+                            const cleanSym = tickerSym.replace(/^\^/, "");
+                            const displayLabel = formatTickerDisplay(tickerSym);
+                            return (
+                              <button
+                                key={tickerSym}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (onSelectTicker) onSelectTicker(cleanSym);
+                                }}
+                                className="news-ticker-tag"
+                                title={`Analyze ${displayLabel} in Market Intelligence`}
+                              >
+                                <TrendingUp size={11} />
+                                <span>{displayLabel}</span>
+                              </button>
+                            );
+                          })
                         ) : (
                           <span className="news-general-tag">Market Wire</span>
                         )}
@@ -536,22 +566,26 @@ export default function FinanceNewsPage({ onSelectTicker }) {
                       )}
 
                       <div className="news-card-footer">
-                        {/* Clean Ticker Badges WITHOUT dollar sign */}
+                        {/* Clean Ticker Badges WITHOUT dollar sign or caret ^ */}
                         <div className="news-tickers-list">
                           {article.tickers && article.tickers.length > 0 ? (
-                            article.tickers.slice(0, 3).map(tickerSym => (
-                              <button
-                                key={tickerSym}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (onSelectTicker) onSelectTicker(tickerSym);
-                                }}
-                                className="news-ticker-tag"
-                                title={`Analyze ${tickerSym} in Market Intelligence`}
-                              >
-                                {tickerSym}
-                              </button>
-                            ))
+                            article.tickers.slice(0, 3).map(tickerSym => {
+                              const cleanSym = tickerSym.replace(/^\^/, "");
+                              const displayLabel = formatTickerDisplay(tickerSym);
+                              return (
+                                <button
+                                  key={tickerSym}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onSelectTicker) onSelectTicker(cleanSym);
+                                  }}
+                                  className="news-ticker-tag"
+                                  title={`Analyze ${displayLabel} in Market Intelligence`}
+                                >
+                                  {displayLabel}
+                                </button>
+                              );
+                            })
                           ) : (
                             <span className="news-general-tag">Markets</span>
                           )}

@@ -14,13 +14,51 @@ import { POPULAR_TICKERS, MOCK_STOCKS } from "./mockData";
 import { Zap, Loader2, Sparkles, TrendingUp, ShieldCheck, LineChart, Globe } from "lucide-react";
 
 export default function App() {
-  const [activePage, setActivePage] = useState("market-intelligence");
+  // Read initial page from URL hash or localStorage so hard-refresh preserves the current page
+  const getInitialPage = () => {
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash.replace(/^#\/?/, "").trim();
+      if (hash) return hash;
+      try {
+        const saved = localStorage.getItem("arthax_active_page");
+        if (saved) return saved;
+      } catch {}
+    }
+    return "market-intelligence";
+  };
+
+  const [activePage, setActivePage] = useState(getInitialPage);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [ticker, setTicker] = useState("AAPL");
   const [activeView, setActiveView] = useState("forecast");
   const [selectedRange, setSelectedRange] = useState("1y");
   const [forecastYears, setForecastYears] = useState(2);
   const [forecastHorizon, setForecastHorizon] = useState("2y");
+
+  // Keep URL hash and localStorage in sync with active page
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("arthax_active_page", activePage);
+        const currentHash = window.location.hash.replace(/^#\/?/, "").trim();
+        if (currentHash !== activePage) {
+          window.history.replaceState(null, "", `#${activePage}`);
+        }
+      } catch {}
+    }
+  }, [activePage]);
+
+  // Support browser forward/back buttons
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace(/^#\/?/, "").trim();
+      if (hash && hash !== activePage) {
+        setActivePage(hash);
+      }
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, [activePage]);
 
   // Initialize with authentic baseline so Market Intelligence page renders immediately without empty flashes
   const [stock, setStock] = useState(MOCK_STOCKS.AAPL);
@@ -120,7 +158,7 @@ export default function App() {
   }, [aiStatus]);
 
   const handleSelectTicker = (newTicker) => {
-    const sym = newTicker.toUpperCase().trim();
+    const sym = (newTicker || "").toUpperCase().trim().replace(/^\^/, "");
     if (sym) {
       if (sym !== ticker) {
         setTicker(sym);
@@ -134,15 +172,51 @@ export default function App() {
     }
   };
 
+  const isStockMatchingTicker = (stockObj, currentTicker) => {
+    if (!stockObj || !currentTicker) return false;
+    const cleanCurrent = currentTicker.toUpperCase().replace(/^\^/, "").trim();
+    const cleanSym = (stockObj.symbol || "").toUpperCase().replace(/^\^/, "").trim();
+    const cleanRaw = (stockObj.rawSymbol || "").toUpperCase().replace(/^\^/, "").trim();
+    const cleanDisplay = (stockObj.displaySymbol || "").toUpperCase().replace(/^\^/, "").trim();
+
+    if (cleanSym === cleanCurrent || cleanRaw === cleanCurrent || cleanDisplay === cleanCurrent) return true;
+    if (["NIFTY", "NIFTY 50", "NSEI", "NIFTY50"].includes(cleanCurrent) && 
+        ["NIFTY", "NIFTY 50", "NSEI", "NIFTY50"].includes(cleanSym)) return true;
+    if (["SENSEX", "BSESN", "BSE"].includes(cleanCurrent) && 
+        ["SENSEX", "BSESN", "BSE"].includes(cleanSym)) return true;
+    if (["S&P 500", "SP500", "GSPC", "SPX"].includes(cleanCurrent) && 
+        ["S&P 500", "SP500", "GSPC", "SPX"].includes(cleanSym)) return true;
+    if (["NASDAQ", "IXIC"].includes(cleanCurrent) && 
+        ["NASDAQ", "IXIC"].includes(cleanSym)) return true;
+    if (["DOW", "DOW JONES", "DJI"].includes(cleanCurrent) && 
+        ["DOW", "DOW JONES", "DJI"].includes(cleanSym)) return true;
+    return false;
+  };
+
+  const isForecastMatchingTicker = (forecastObj, currentTicker) => {
+    if (!forecastObj || !currentTicker) return false;
+    const cleanCurrent = currentTicker.toUpperCase().replace(/^\^/, "").trim();
+    const cleanSym = (forecastObj.symbol || "").toUpperCase().replace(/^\^/, "").trim();
+    const cleanRaw = (forecastObj.rawSymbol || "").toUpperCase().replace(/^\^/, "").trim();
+    if (cleanSym === cleanCurrent || cleanRaw === cleanCurrent) return true;
+    if (["NIFTY", "NIFTY 50", "NSEI", "NIFTY50"].includes(cleanCurrent) && 
+        ["NIFTY", "NIFTY 50", "NSEI", "NIFTY50"].includes(cleanSym)) return true;
+    if (["SENSEX", "BSESN", "BSE"].includes(cleanCurrent) && 
+        ["SENSEX", "BSESN", "BSE"].includes(cleanSym)) return true;
+    if (["S&P 500", "SP500", "GSPC", "SPX"].includes(cleanCurrent) && 
+        ["S&P 500", "SP500", "GSPC", "SPX"].includes(cleanSym)) return true;
+    return false;
+  };
+
   // Determine dedicated graph loading states to prevent displaying stale chart data
-  const isHistoricalLoading = stockLoading || (stock && stock.symbol !== ticker);
-  const isForecastLoading = forecastLoading || (forecast && forecast.symbol !== ticker);
+  const isHistoricalLoading = stockLoading || !isStockMatchingTicker(stock, ticker);
+  const isForecastLoading = forecastLoading || !isForecastMatchingTicker(forecast, ticker);
   const isGraphLoading = activeView === "historical" ? isHistoricalLoading : isForecastLoading;
   const loading = isGraphLoading;
 
   // Clean data arrays: never render the previous company's historical candles or forecast curve
-  const activeHistoryData = stock && stock.symbol === ticker ? (stock.history || []) : [];
-  const activeForecastData = forecast && forecast.symbol === ticker ? (forecast.timeline || []) : [];
+  const activeHistoryData = isStockMatchingTicker(stock, ticker) ? (stock.history || []) : [];
+  const activeForecastData = isForecastMatchingTicker(forecast, ticker) ? (forecast.timeline || []) : [];
 
   return (
     <div className="app-container">
@@ -359,10 +433,10 @@ export default function App() {
                         historyData={activeHistoryData}
                         forecastData={activeForecastData}
                         projectedCandles={forecast?.projectedCandles || []}
-                        currency={stock?.symbol === ticker ? (stock?.currency || "USD") : "USD"}
-                        stockChange={stock?.symbol === ticker ? (stock?.change || 0) : 0}
-                        fxRate={stock?.symbol === ticker ? (stock?.fxRate || stock?.usdInrRate) : null}
-                        usdInrRate={stock?.symbol === ticker ? (stock?.usdInrRate) : null}
+                        currency={isStockMatchingTicker(stock, ticker) ? (stock?.currency || "USD") : "USD"}
+                        stockChange={isStockMatchingTicker(stock, ticker) ? (stock?.change || 0) : 0}
+                        fxRate={isStockMatchingTicker(stock, ticker) ? (stock?.fxRate || stock?.usdInrRate) : null}
+                        usdInrRate={isStockMatchingTicker(stock, ticker) ? (stock?.usdInrRate) : null}
                       />
                     </div>
                   </>

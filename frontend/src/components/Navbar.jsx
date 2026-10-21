@@ -69,7 +69,8 @@ export default function Navbar({
   }, [activeIndex, mobileSearchOpen]);
 
   const handleSelect = (symbol) => {
-    onSelectTicker(symbol);
+    const cleanSym = (symbol || "").replace(/^\^/, "");
+    onSelectTicker(cleanSym);
     setQuery("");
     setIsOpen(false);
     setMobileSearchOpen(false);
@@ -247,7 +248,7 @@ export default function Navbar({
                         <div style={{ minWidth: 0 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                             <span style={{ fontWeight: 600, color: "#ffffff", fontSize: "13px" }}>
-                              {item.symbol}
+                              {item.displaySymbol || item.symbol?.replace(/^\^/, "")}
                             </span>
                             <span style={{
                               fontSize: "10px",
@@ -433,7 +434,7 @@ export default function Navbar({
                           <div style={{ minWidth: 0 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                               <span style={{ fontWeight: 600, color: "#ffffff", fontSize: "13px" }}>
-                                {item.symbol}
+                                {item.displaySymbol || item.symbol?.replace(/^\^/, "")}
                               </span>
                               <span style={{
                                 fontSize: "10px",

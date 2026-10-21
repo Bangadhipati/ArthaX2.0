@@ -391,20 +391,37 @@ COMPANY_TICKER_MAP = [
     ("ICICI", "ICICIBANK.NS"),
     ("STATE BANK OF INDIA", "SBIN.NS"),
     ("SBI", "SBIN.NS"),
-    ("NIFTY 50", "^NSEI"),
-    ("NIFTY", "^NSEI"),
-    ("SENSEX", "^BSESN"),
+    ("NIFTY 50", "NIFTY"),
+    ("NIFTY", "NIFTY"),
+    ("SENSEX", "SENSEX"),
     
     # Crypto & Global Benchmarks
     ("BITCOIN", "BTC-USD"),
     ("BTC", "BTC-USD"),
     ("ETHEREUM", "ETH-USD"),
     ("ETH", "ETH-USD"),
-    ("S&P 500", "^GSPC"),
-    ("SP500", "^GSPC"),
-    ("NASDAQ", "^IXIC"),
-    ("DOW JONES", "^DJI")
+    ("S&P 500", "S&P 500"),
+    ("SP500", "S&P 500"),
+    ("NASDAQ", "NASDAQ"),
+    ("DOW JONES", "DOW")
 ]
+
+INDEX_SYMBOLS = {
+    "NIFTY": "^NSEI",
+    "NSEI": "^NSEI",
+    "NIFTY50": "^NSEI",
+    "SENSEX": "^BSESN",
+    "BSESN": "^BSESN",
+    "BSE": "^BSESN",
+    "GSPC": "^GSPC",
+    "S&P 500": "^GSPC",
+    "SP500": "^GSPC",
+    "SPX": "^GSPC",
+    "IXIC": "^IXIC",
+    "NASDAQ": "^IXIC",
+    "DJI": "^DJI",
+    "DOW": "^DJI"
+}
 
 def extract_news_tickers(text: str) -> list:
     """Identifies prominent market asset and ticker mentions by company name or ticker symbol."""
@@ -413,8 +430,10 @@ def extract_news_tickers(text: str) -> list:
     for kw, sym in COMPANY_TICKER_MAP:
         # Match as whole word/phrase to avoid substring collisions
         pattern = r"\b" + re.escape(kw) + r"\b"
-        if re.search(pattern, text_upper) and sym not in found:
-            found.append(sym)
+        if re.search(pattern, text_upper):
+            clean_sym = sym.replace("^", "")
+            if clean_sym not in found:
+                found.append(clean_sym)
     return found
 
 
@@ -690,13 +709,27 @@ def search_ticker(q: str = Query(..., min_length=1, description="Company name or
             valid_types = {"EQUITY", "ETF", "MUTUALFUND", "CRYPTOCURRENCY", "CURRENCY", "INDEX", "FUTURE", "COMMODITY"}
 
             for quote in data.get("quotes", []):
-                symbol = quote.get("symbol")
+                raw_sym = quote.get("symbol")
                 quote_type = (quote.get("quoteType") or "EQUITY").upper()
-                if symbol and (quote_type in valid_types or len(symbol) <= 12):
-                    name = quote.get("shortname") or quote.get("longname") or symbol
+                if raw_sym and (quote_type in valid_types or len(raw_sym) <= 12):
+                    clean_sym = raw_sym.replace("^", "")
+                    display_sym = clean_sym
+                    if raw_sym == "^NSEI":
+                        display_sym = "NIFTY 50"
+                    elif raw_sym == "^BSESN":
+                        display_sym = "SENSEX"
+                    elif raw_sym == "^GSPC":
+                        display_sym = "S&P 500"
+                    elif raw_sym == "^IXIC":
+                        display_sym = "NASDAQ"
+                    elif raw_sym == "^DJI":
+                        display_sym = "DOW JONES"
+                    name = quote.get("shortname") or quote.get("longname") or display_sym
                     exchange = quote.get("exchange") or quote.get("exchDisp") or "Global"
                     results.append({
-                        "symbol": symbol,
+                        "symbol": clean_sym,
+                        "displaySymbol": display_sym,
+                        "rawSymbol": raw_sym,
                         "name": name,
                         "exchange": exchange,
                         "type": quote_type
@@ -718,7 +751,8 @@ def search_ticker(q: str = Query(..., min_length=1, description="Company name or
 @app.get("/api/stock/{ticker}")
 def get_stock_data(ticker: str, range: str = Query("1y", regex="^(1h|6h|12h|24h|1w|1m|6m|1y|5y|max)$")):
     """Fetches historical price candles and company fundamentals with granular intraday support."""
-    ticker_clean = ticker.upper().strip()
+    raw_ticker = ticker.upper().strip()
+    ticker_clean = INDEX_SYMBOLS.get(raw_ticker.replace("^", ""), raw_ticker)
     range_lower = range.lower().strip()
 
     try:
@@ -844,8 +878,39 @@ def get_stock_data(ticker: str, range: str = Query("1y", regex="^(1h|6h|12h|24h|
         raw_vol = info.get("regularMarketVolume") or candles[-1]["volume"]
         volume = int(raw_vol) if raw_vol else None
 
+        # Clean display symbol without technical caret (^)
+        display_symbol = raw_ticker.replace("^", "")
+        if ticker_clean == "^NSEI":
+            display_symbol = "NIFTY 50"
+        elif ticker_clean == "^BSESN":
+            display_symbol = "SENSEX"
+        elif ticker_clean == "^GSPC":
+            display_symbol = "S&P 500"
+        elif ticker_clean == "^IXIC":
+            display_symbol = "NASDAQ"
+        elif ticker_clean == "^DJI":
+            display_symbol = "DOW JONES"
+
+        name = info.get("shortName") or info.get("longName")
+        if not name or name == ticker_clean:
+            if ticker_clean == "^NSEI":
+                name = "NIFTY 50 Index (NSE India)"
+            elif ticker_clean == "^BSESN":
+                name = "S&P BSE SENSEX Index (India)"
+            elif ticker_clean == "^GSPC":
+                name = "S&P 500 Index (Wall Street)"
+            elif ticker_clean == "^IXIC":
+                name = "NASDAQ Composite Index"
+            elif ticker_clean == "^DJI":
+                name = "Dow Jones Industrial Average"
+            else:
+                name = display_symbol
+
         return {
-            "symbol": ticker_clean,
+            "symbol": display_symbol,
+            "displaySymbol": display_symbol,
+            "rawSymbol": ticker_clean,
+            "name": name,
             "currency": currency,
             "latestPrice": latest_close,
             "inrPrice": round(inr_price, 2),
@@ -875,7 +940,8 @@ class ForecastRequest(BaseModel):
 @app.post("/api/forecast")
 def generate_forecast(req: ForecastRequest):
     """Generates multi-resolution AI price trajectory and projected candlesticks with Prophet."""
-    ticker_clean = req.ticker.upper().strip()
+    raw_ticker = req.ticker.upper().strip()
+    ticker_clean = INDEX_SYMBOLS.get(raw_ticker.replace("^", ""), raw_ticker)
 
     # Normalize horizon
     raw_h = (req.horizon or "").lower().strip()
@@ -1061,8 +1127,22 @@ def generate_forecast(req: ForecastRequest):
 
         sentiment = "Bullish" if growth_pct > 5 else ("Bearish" if growth_pct < -3 else "Neutral / Moderate")
 
+        display_sym = raw_ticker.replace("^", "")
+        if ticker_clean == "^NSEI":
+            display_sym = "NIFTY 50"
+        elif ticker_clean == "^BSESN":
+            display_sym = "SENSEX"
+        elif ticker_clean == "^GSPC":
+            display_sym = "S&P 500"
+        elif ticker_clean == "^IXIC":
+            display_sym = "NASDAQ"
+        elif ticker_clean == "^DJI":
+            display_sym = "DOW JONES"
+
         return {
-            "symbol": ticker_clean,
+            "symbol": display_sym,
+            "displaySymbol": display_sym,
+            "rawSymbol": ticker_clean,
             "currency": currency,
             "years": years,
             "horizon": horizon,

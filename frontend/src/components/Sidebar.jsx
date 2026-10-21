@@ -5,7 +5,8 @@ export default function Sidebar({
   activePage = "market-intelligence",
   onSelectPage,
   mobileOpen = false,
-  onCloseMobile
+  onCloseMobile,
+  newsLoading = false
 }) {
   return (
     <>
@@ -79,21 +80,44 @@ export default function Sidebar({
               }}>
                 Finance News
               </span>
-              <span
-                style={{
-                  marginLeft: "auto",
-                  fontSize: "9.5px",
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  padding: "2px 6px",
-                  borderRadius: "9999px",
-                  background: "rgba(48, 209, 88, 0.15)",
-                  color: "var(--apple-green)",
-                  letterSpacing: "0.04em"
-                }}
-              >
-                Live
-              </span>
+              {newsLoading ? (
+                <span
+                  style={{
+                    marginLeft: "auto",
+                    fontSize: "9.5px",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    padding: "2px 6px",
+                    borderRadius: "9999px",
+                    background: "rgba(255, 69, 58, 0.15)",
+                    border: "1px solid rgba(255, 69, 58, 0.35)",
+                    color: "var(--apple-red)",
+                    letterSpacing: "0.04em",
+                    boxShadow: "0 0 8px rgba(255, 69, 58, 0.2)",
+                    transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)"
+                  }}
+                >
+                  Offline
+                </span>
+              ) : (
+                <span
+                  style={{
+                    marginLeft: "auto",
+                    fontSize: "9.5px",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    padding: "2px 6px",
+                    borderRadius: "9999px",
+                    background: "rgba(48, 209, 88, 0.15)",
+                    border: "1px solid rgba(48, 209, 88, 0.25)",
+                    color: "var(--apple-green)",
+                    letterSpacing: "0.04em",
+                    transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)"
+                  }}
+                >
+                  Live
+                </span>
+              )}
             </button>
           </div>
         </div>

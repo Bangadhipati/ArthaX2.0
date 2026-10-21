@@ -59,7 +59,7 @@ export default function HeroTicker({
         {/* Symbol, Name & Exchange pill */}
         <div className="hero-ticker-header">
           <h1 className="hero-symbol">
-            {stock.symbol}
+            {stock.displaySymbol || stock.symbol?.replace(/^\^/, "")}
           </h1>
           <span className="hero-name" title={stock.name}>
             {stock.name}

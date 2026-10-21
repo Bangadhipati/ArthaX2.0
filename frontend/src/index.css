@@ -251,6 +251,33 @@ input[type="range"].cupertino-slider::-webkit-slider-thumb:hover {
   animation: breathingPulse 2.4s ease-in-out infinite;
 }
 
+@keyframes breathingRedPulse {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.7;
+    box-shadow: 0 0 0 0 rgba(255, 69, 58, 0.5);
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 1;
+    box-shadow: 0 0 10px 3px rgba(255, 69, 58, 0.7);
+  }
+  100% {
+    transform: scale(0.92);
+    opacity: 0.7;
+    box-shadow: 0 0 0 0 rgba(255, 69, 58, 0.5);
+  }
+}
+
+.breathing-dot-red {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--apple-red);
+  box-shadow: 0 0 6px var(--apple-red);
+  animation: breathingRedPulse 1.6s ease-in-out infinite;
+}
+
 /* Tooltip Custom styling for Recharts */
 .custom-recharts-tooltip {
   background: rgba(18, 20, 26, 0.92) !important;
@@ -1733,6 +1760,14 @@ input[type="range"].cupertino-slider::-webkit-slider-thumb:hover {
   font-weight: 700;
   letter-spacing: 0.06em;
   flex-shrink: 0;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.news-live-badge.offline {
+  background: rgba(255, 69, 58, 0.12);
+  border: 1px solid rgba(255, 69, 58, 0.35);
+  color: var(--apple-red);
+  box-shadow: 0 0 12px rgba(255, 69, 58, 0.15);
 }
 
 /* Actions: Expandable Search & Refresh */
