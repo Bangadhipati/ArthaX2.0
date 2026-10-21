@@ -16,7 +16,28 @@ import {
   Loader2
 } from "lucide-react";
 import { fetchFinanceNews } from "../api";
-import { MOCK_FINANCE_NEWS } from "../mockData";
+
+// Helper to sanitize news descriptions from stray HTML entities or &nbsp;
+const cleanNewsSummary = (text, title = "") => {
+  if (!text) return "";
+  let clean = text
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&ndash;/g, " - ")
+    .replace(/&mdash;/g, " - ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  // If description repeats headline verbatim, skip redundant duplication
+  if (title && clean.toLowerCase() === title.trim().toLowerCase()) {
+    return "";
+  }
+  return clean;
+};
 
 const CATEGORIES = [
   { id: "all", label: "All News", icon: Globe },
@@ -69,8 +90,8 @@ export default function FinanceNewsPage({ onSelectTicker }) {
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [news, setNews] = useState(MOCK_FINANCE_NEWS);
-  const [loading, setLoading] = useState(false);
+  const [news, setNews] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSearchingServer, setIsSearchingServer] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(new Date());
@@ -102,7 +123,7 @@ export default function FinanceNewsPage({ onSelectTicker }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isSearchOpen, searchQuery]);
 
-  // Fetch news from API (with category and optional server query)
+  // Fetch real-time news from API (with category and optional server query)
   const loadNews = async (cat = activeCategory, query = "") => {
     setLoading(true);
     try {
@@ -110,20 +131,12 @@ export default function FinanceNewsPage({ onSelectTicker }) {
       if (items && items.length > 0) {
         setNews(items);
         setLastUpdated(new Date());
-      } else if (!query) {
-        // Fallback filter on mock news only if general feed fails
-        if (cat === "all") {
-          setNews(MOCK_FINANCE_NEWS);
-        } else {
-          setNews(MOCK_FINANCE_NEWS.filter(n => n.category === cat || !n.category));
-        }
       } else {
-        // Empty query results from server
         setNews([]);
       }
     } catch (err) {
-      console.warn("Failed to fetch news:", err);
-      if (!query) setNews(MOCK_FINANCE_NEWS);
+      console.warn("Failed to fetch live news:", err);
+      setNews([]);
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -232,8 +245,17 @@ export default function FinanceNewsPage({ onSelectTicker }) {
     });
   }, [news, searchQuery]);
 
-  const heroArticle = filteredNews.length > 0 ? filteredNews[0] : null;
-  const gridArticles = filteredNews.length > 1 ? filteredNews.slice(1) : [];
+  // Sort articles strictly in sequence based on publication timestamp descending
+  const sortedFilteredNews = useMemo(() => {
+    return [...filteredNews].sort((a, b) => {
+      const timeA = a.timestamp || (a.publishedAt ? new Date(a.publishedAt).getTime() : 0);
+      const timeB = b.timestamp || (b.publishedAt ? new Date(b.publishedAt).getTime() : 0);
+      return timeB - timeA;
+    });
+  }, [filteredNews]);
+
+  const heroArticle = sortedFilteredNews.length > 0 ? sortedFilteredNews[0] : null;
+  const gridArticles = sortedFilteredNews.length > 1 ? sortedFilteredNews.slice(1) : [];
 
   return (
     <div className="finance-news-container">
@@ -328,13 +350,54 @@ export default function FinanceNewsPage({ onSelectTicker }) {
         </div>
       </div>
 
-      {/* Skeleton Loading State */}
+      {/* Skeleton Loading State with Animated Lines */}
       {loading && (
         <div className="news-skeleton-layout">
-          <div className="skeleton-card news-skeleton-hero" />
+          {/* Hero Card Skeleton */}
+          <div className="news-hero-card apple-glass news-skeleton-card-container">
+            <div className="news-skeleton-meta-row">
+              <div className="skeleton-line skeleton-badge-shimmer" style={{ width: "95px", height: "20px" }} />
+              <div className="skeleton-line" style={{ width: "110px", height: "13px" }} />
+              <div className="skeleton-line" style={{ width: "60px", height: "13px" }} />
+            </div>
+            <div className="news-skeleton-title-lines">
+              <div className="skeleton-line" style={{ width: "92%", height: "24px", marginBottom: "10px" }} />
+              <div className="skeleton-line" style={{ width: "65%", height: "24px", marginBottom: "16px" }} />
+            </div>
+            <div className="news-skeleton-summary-lines">
+              <div className="skeleton-line" style={{ width: "100%", height: "14px", marginBottom: "8px" }} />
+              <div className="skeleton-line" style={{ width: "85%", height: "14px", marginBottom: "20px" }} />
+            </div>
+            <div className="news-skeleton-footer-row">
+              <div style={{ display: "flex", gap: "8px" }}>
+                <div className="skeleton-line skeleton-pill-shimmer" style={{ width: "64px", height: "26px" }} />
+                <div className="skeleton-line skeleton-pill-shimmer" style={{ width: "72px", height: "26px" }} />
+              </div>
+              <div className="skeleton-line skeleton-btn-shimmer" style={{ width: "110px", height: "30px" }} />
+            </div>
+          </div>
+
+          {/* Grid Cards Skeleton */}
           <div className="news-grid">
             {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="skeleton-card news-skeleton-card" />
+              <div key={i} className="news-card apple-glass news-skeleton-card-container">
+                <div className="news-skeleton-meta-row">
+                  <div className="skeleton-line" style={{ width: "85px", height: "13px" }} />
+                  <div className="skeleton-line" style={{ width: "50px", height: "13px" }} />
+                </div>
+                <div className="news-skeleton-title-lines" style={{ marginBottom: "14px" }}>
+                  <div className="skeleton-line" style={{ width: "95%", height: "17px", marginBottom: "8px" }} />
+                  <div className="skeleton-line" style={{ width: "70%", height: "17px" }} />
+                </div>
+                <div className="news-skeleton-summary-lines" style={{ marginBottom: "18px", flex: 1 }}>
+                  <div className="skeleton-line" style={{ width: "100%", height: "12px", marginBottom: "6px" }} />
+                  <div className="skeleton-line" style={{ width: "80%", height: "12px" }} />
+                </div>
+                <div className="news-skeleton-footer-row">
+                  <div className="skeleton-line skeleton-pill-shimmer" style={{ width: "58px", height: "22px" }} />
+                  <div className="skeleton-line" style={{ width: "22px", height: "22px", borderRadius: "50%" }} />
+                </div>
+              </div>
             ))}
           </div>
         </div>
@@ -394,9 +457,9 @@ export default function FinanceNewsPage({ onSelectTicker }) {
                       </a>
                     </h2>
 
-                    {heroArticle.summary && heroArticle.summary !== heroArticle.title && (
+                    {heroArticle.summary && cleanNewsSummary(heroArticle.summary, heroArticle.title) && (
                       <p className="news-hero-summary">
-                        {heroArticle.summary}
+                        {cleanNewsSummary(heroArticle.summary, heroArticle.title)}
                       </p>
                     )}
 
@@ -466,9 +529,9 @@ export default function FinanceNewsPage({ onSelectTicker }) {
                         </a>
                       </h3>
 
-                      {article.summary && article.summary !== article.title && (
+                      {article.summary && cleanNewsSummary(article.summary, article.title) && (
                         <p className="news-card-summary">
-                          {article.summary}
+                          {cleanNewsSummary(article.summary, article.title)}
                         </p>
                       )}
 

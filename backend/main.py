@@ -451,7 +451,9 @@ def extract_clean_summary(desc_raw: str, main_title: str, publisher: str) -> str
     if not desc_raw:
         return f"Comprehensive coverage and live financial analysis reported by {publisher}."
 
-    decoded = html.unescape(desc_raw).replace('\xa0', ' ').replace('&nbsp;', ' ')
+    desc_clean = re.sub(r'View Full Coverage on Google News.*', '', desc_raw, flags=re.IGNORECASE)
+    desc_clean = re.sub(r'See more headlines & perspectives.*', '', desc_clean, flags=re.IGNORECASE)
+    decoded = html.unescape(desc_clean).replace('\xa0', ' ').replace('&nbsp;', ' ')
     
     # Google RSS often contains an <ol> of coverage from multiple outlets
     li_matches = re.findall(r'<li[^>]*>(.*?)</li>', decoded, flags=re.DOTALL | re.IGNORECASE)
@@ -480,9 +482,11 @@ def extract_clean_summary(desc_raw: str, main_title: str, publisher: str) -> str
         return " • ".join(related_points[:2])
     
     # If no <li> items were found, strip tags and clean fallback
-    fallback = normalize_news_text(desc_raw)
+    fallback = normalize_news_text(desc_clean)
+    fallback = re.sub(r'View Full Coverage on Google News.*', '', fallback, flags=re.IGNORECASE)
+    fallback = re.sub(r'See more headlines & perspectives.*', '', fallback, flags=re.IGNORECASE).strip()
     fb_lower = fallback.lower()
-    if not fallback or fb_lower == clean_title_core or clean_title_core.startswith(fb_lower):
+    if not fallback or fb_lower == clean_title_core or clean_title_core.startswith(fb_lower) or fb_lower.startswith(clean_title_core):
         if publisher and publisher != "Market News":
             return f"Detailed reporting and real-time market impact analysis from {publisher}."
         return "Market intelligence update tracking real-time industry developments."
@@ -513,6 +517,10 @@ def format_relative_time(pub_date_str: str) -> str:
         return format_relative_time_from_secs(int(diff.total_seconds()))
     except Exception:
         return "Recent"
+
+
+NEWS_CACHE = {}
+NEWS_CACHE_TTL = 120  # 2 minutes cache for real-time news freshness
 
 
 @app.get("/api/news")

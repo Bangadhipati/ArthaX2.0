@@ -2268,31 +2268,89 @@ input[type="range"].cupertino-slider::-webkit-slider-thumb:hover {
   width: 100%;
 }
 
-/* Skeleton Loaders */
+/* ==========================================================================
+   Finance News Loading Skeleton (Line Animation & Apple Cupertino Shimmer)
+   ========================================================================== */
 .news-skeleton-layout {
   display: flex;
   flex-direction: column;
-  gap: clamp(12px, 1.5vw, 18px);
+  gap: clamp(14px, 2vw, 22px);
   width: 100%;
 }
 
-.news-skeleton-hero {
-  height: clamp(160px, 22vw, 220px);
-  border-radius: var(--radius-lg);
-  background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 100%);
-  background-size: 200% 100%;
-  animation: skeletonShimmer 2s infinite;
-  width: 100%;
-  box-sizing: border-box;
+.news-skeleton-card-container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  pointer-events: none;
 }
 
-.news-skeleton-card {
-  height: clamp(150px, 20vw, 180px);
-  border-radius: var(--radius-md);
-  background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 100%);
+.news-skeleton-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.news-skeleton-title-lines {
+  display: flex;
+  flex-direction: column;
+}
+
+.news-skeleton-summary-lines {
+  display: flex;
+  flex-direction: column;
+}
+
+.news-skeleton-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.skeleton-line {
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.13) 50%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
   background-size: 200% 100%;
-  animation: skeletonShimmer 2s infinite;
-  box-sizing: border-box;
+  animation: skeletonShimmer 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  flex-shrink: 0;
+}
+
+.skeleton-pill-shimmer {
+  border-radius: 9999px !important;
+}
+
+.skeleton-badge-shimmer {
+  border-radius: 9999px !important;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 69, 58, 0.1) 0%,
+    rgba(255, 69, 58, 0.28) 50%,
+    rgba(255, 69, 58, 0.1) 100%
+  ) !important;
+  background-size: 200% 100% !important;
+}
+
+.skeleton-btn-shimmer {
+  border-radius: 8px !important;
+}
+
+@keyframes skeletonShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 /* ==========================================================================
