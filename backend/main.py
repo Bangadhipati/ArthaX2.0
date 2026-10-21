@@ -1,3 +1,4 @@
+import html
 import os
 import re
 import time
@@ -414,9 +415,93 @@ def extract_news_tickers(text: str) -> list:
         pattern = r"\b" + re.escape(kw) + r"\b"
         if re.search(pattern, text_upper) and sym not in found:
             found.append(sym)
-            if len(found) >= 3:
-                break
     return found
+
+
+def normalize_news_text(text: str) -> str:
+    """Decodes HTML entities, converts non-breaking spaces, and cleans punctuation."""
+    if not text:
+        return ""
+    # Unescape HTML entities (&nbsp;, &amp;, &#39;, &quot;, &lt;, &gt;, &ndash;, etc.)
+    text = html.unescape(text)
+    # Convert non-breaking space & literal entities to regular space
+    text = text.replace('\xa0', ' ').replace('&nbsp;', ' ').replace('&amp;', '&')
+    # Normalize unicode smart quotes and dashes
+    replacements = {
+        '\u2018': "'", '\u2019': "'", '\u201a': "'", '\u201b': "'",
+        '\u201c': '"', '\u201d': '"', '\u201e': '"',
+        '\u2013': ' - ', '\u2014': ' - ', '\u2026': '...',
+        '\ufffd': "'"
+    }
+    for orig, rep in replacements.items():
+        text = text.replace(orig, rep)
+    # Remove any stray HTML tags
+    text = re.sub(r'<[^>]+>', ' ', text)
+    # Remove control characters
+    text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]', '', text)
+    # Collapse multiple whitespaces
+    return re.sub(r'\s+', ' ', text).strip()
+
+
+def extract_clean_summary(desc_raw: str, main_title: str, publisher: str) -> str:
+    """
+    Extracts a clean, informative news summary without HTML tags, &nbsp;,
+    or repeating the main headline verbatim.
+    """
+    if not desc_raw:
+        return f"Comprehensive coverage and live financial analysis reported by {publisher}."
+
+    decoded = html.unescape(desc_raw).replace('\xa0', ' ').replace('&nbsp;', ' ')
+    
+    # Google RSS often contains an <ol> of coverage from multiple outlets
+    li_matches = re.findall(r'<li[^>]*>(.*?)</li>', decoded, flags=re.DOTALL | re.IGNORECASE)
+    
+    clean_title_core = main_title.split(" - ")[0].strip().lower()
+    related_points = []
+    
+    for li in li_matches:
+        a_m = re.search(r'<a[^>]*>(.*?)</a>', li, flags=re.DOTALL | re.IGNORECASE)
+        f_m = re.search(r'<font[^>]*>(.*?)</font>', li, flags=re.DOTALL | re.IGNORECASE)
+        
+        headline = normalize_news_text(a_m.group(1)) if a_m else ""
+        pub = normalize_news_text(f_m.group(1)) if f_m else ""
+        
+        if headline:
+            h_core = headline.split(" - ")[0].strip().lower()
+            # If the headline is essentially the same as main title, skip it
+            if h_core == clean_title_core or clean_title_core.startswith(h_core) or h_core.startswith(clean_title_core):
+                continue
+            if pub:
+                related_points.append(f"{headline} ({pub})")
+            else:
+                related_points.append(headline)
+                
+    if related_points:
+        return " • ".join(related_points[:2])
+    
+    # If no <li> items were found, strip tags and clean fallback
+    fallback = normalize_news_text(desc_raw)
+    fb_lower = fallback.lower()
+    if not fallback or fb_lower == clean_title_core or clean_title_core.startswith(fb_lower):
+        if publisher and publisher != "Market News":
+            return f"Detailed reporting and real-time market impact analysis from {publisher}."
+        return "Market intelligence update tracking real-time industry developments."
+    
+    return fallback
+
+
+def format_relative_time_from_secs(secs: int) -> str:
+    """Converts seconds diff to relative format like '20m ago'."""
+    if secs < 60:
+        return "Just now"
+    elif secs < 3600:
+        return f"{max(1, secs // 60)}m ago"
+    elif secs < 86400:
+        return f"{secs // 3600}h ago"
+    elif secs < 172800:
+        return "Yesterday"
+    else:
+        return f"{secs // 86400}d ago"
 
 
 def format_relative_time(pub_date_str: str) -> str:
@@ -425,17 +510,7 @@ def format_relative_time(pub_date_str: str) -> str:
         dt = email.utils.parsedate_to_datetime(pub_date_str)
         now = datetime.now(dt.tzinfo)
         diff = now - dt
-        secs = int(diff.total_seconds())
-        if secs < 60:
-            return "Just now"
-        elif secs < 3600:
-            return f"{secs // 60}m ago"
-        elif secs < 86400:
-            return f"{secs // 3600}h ago"
-        elif secs < 172800:
-            return "Yesterday"
-        else:
-            return f"{secs // 86400}d ago"
+        return format_relative_time_from_secs(int(diff.total_seconds()))
     except Exception:
         return "Recent"
 
@@ -444,11 +519,12 @@ def format_relative_time(pub_date_str: str) -> str:
 def get_financial_news(
     category: str = Query("all", description="Category: all, markets, tech, india, crypto"),
     q: Optional[str] = Query(None, description="Optional company name, keyword, or ticker search query"),
-    limit: int = Query(35, ge=1, le=100)
+    limit: int = Query(40, ge=1, le=100)
 ):
     """
     Fetches real-time institutional financial news from verified global feeds
     with auto-detected tickers, company name search, publisher attribution, and relative timestamps.
+    Prioritizes Indian market news within the 'all' category and strictly sequences by time.
     100% free with 0 API key dependencies.
     """
     q_clean = q.strip() if q else ""
@@ -474,99 +550,113 @@ def get_financial_news(
         "crypto": "https://news.google.com/rss/search?q=crypto+bitcoin+fed+interest+rates+when:3d&hl=en-US&gl=US&ceid=US:en"
     }
 
+    raw_feed_urls = []
     if q_clean:
         # Search by company name or ticker in finance domain
         is_india = any(k in q_clean.lower() for k in ["tata", "reliance", "nifty", "sensex", "hdfc", "infosys", "sbi", ".ns", "bse"])
         gl_param = "IN" if is_india else "US"
         hl_param = "en-IN" if is_india else "en-US"
         clean_q = urllib.parse.quote_plus(f"{q_clean} stock OR market OR business")
-        feed_url = f"https://news.google.com/rss/search?q={clean_q}&hl={hl_param}&gl={gl_param}&ceid={gl_param}:en"
+        raw_feed_urls.append((f"https://news.google.com/rss/search?q={clean_q}&hl={hl_param}&gl={gl_param}&ceid={gl_param}:en", False))
+    elif category == "all":
+        # For 'all', pull both top Indian market news AND global business news so Indian news has high visibility
+        raw_feed_urls.append((feeds["india"], True))
+        raw_feed_urls.append((feeds["all"], False))
     else:
-        feed_url = feeds.get(category.lower(), feeds["all"])
+        raw_feed_urls.append((feeds.get(category.lower(), feeds["all"]), category == "india"))
 
     articles = []
-    try:
-        req = urllib.request.Request(feed_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
-        res = urllib.request.urlopen(req, timeout=7)
-        root = ET.fromstring(res.read())
+    seen_titles = set()
 
-        items = root.findall(".//item")
-        for idx, item in enumerate(items[:limit]):
-            raw_title = item.find("title").text if item.find("title") is not None else ""
-            link = item.find("link").text if item.find("link") is not None else ""
-            pub_date = item.find("pubDate").text if item.find("pubDate") is not None else ""
-            desc = item.find("description").text if item.find("description") is not None else ""
+    for feed_url, is_indian_feed in raw_feed_urls:
+        try:
+            req = urllib.request.Request(feed_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+            res = urllib.request.urlopen(req, timeout=8)
+            raw_xml = res.read().decode("utf-8", errors="replace")
+            root = ET.fromstring(raw_xml)
 
-            # Extract clean summary by removing HTML tags if present
-            clean_summary = ""
-            if desc:
-                clean_summary = re.sub(r"<[^>]+>", "", desc).strip()
-                if clean_summary.startswith(raw_title):
-                    clean_summary = clean_summary[len(raw_title):].strip()
+            items = root.findall(".//item")
+            for idx, item in enumerate(items[:45]):
+                raw_title = item.find("title").text if item.find("title") is not None else ""
+                link = item.find("link").text if item.find("link") is not None else ""
+                pub_date = item.find("pubDate").text if item.find("pubDate") is not None else ""
+                desc = item.find("description").text if item.find("description") is not None else ""
 
-            parts = raw_title.rsplit(" - ", 1)
-            title = parts[0].strip() if len(parts) > 1 else raw_title.strip()
-            publisher = parts[1].strip() if len(parts) > 1 else "Market News"
+                normalized_raw_title = normalize_news_text(raw_title)
+                parts = normalized_raw_title.rsplit(" - ", 1)
+                title = parts[0].strip() if len(parts) > 1 else normalized_raw_title.strip()
+                publisher = parts[1].strip() if len(parts) > 1 else ("Indian Financial Wire" if is_indian_feed else "Market News")
 
-            time_ago = format_relative_time(pub_date)
-            tickers = extract_news_tickers(title)
+                # De-duplicate by title core
+                title_key = re.sub(r'[^a-zA-Z0-9]', '', title.lower()[:45])
+                if title_key in seen_titles:
+                    continue
+                seen_titles.add(title_key)
 
-            # If user searched a specific company/ticker and none was tagged, check search query
-            if not tickers and q_clean:
-                tickers = extract_news_tickers(q_clean)
+                # Parse timestamp
+                pub_ts = 0.0
+                time_ago = "Recent"
+                iso_date = ""
+                try:
+                    dt = email.utils.parsedate_to_datetime(pub_date)
+                    pub_ts = dt.timestamp()
+                    iso_date = dt.isoformat()
+                    now = datetime.now(dt.tzinfo)
+                    diff = now - dt
+                    time_ago = format_relative_time_from_secs(int(diff.total_seconds()))
+                except Exception:
+                    pub_ts = now_ts - (idx * 180)
+                    iso_date = datetime.fromtimestamp(pub_ts).isoformat()
+                    time_ago = "Recent"
 
-            # Assign topic badge
-            if category == "all":
-                t_lower = title.lower()
-                if any(k in t_lower for k in ["bitcoin", "crypto", "fed", "rate", "inflation"]):
-                    cat_tag = "Crypto & Macro"
-                elif any(k in t_lower for k in ["ai", "tech", "nvidia", "chip", "semiconductor", "apple", "tesla", "microsoft"]):
-                    cat_tag = "Tech & AI"
-                elif any(k in t_lower for k in ["nifty", "sensex", "india", "rupee", "sebi", "rbi", "tata", "reliance"]):
+                # Extract tickers
+                tickers = extract_news_tickers(title)
+                if not tickers and q_clean:
+                    tickers = extract_news_tickers(q_clean)
+
+                # Assign topic category badge
+                if is_indian_feed or any(k in title.lower() for k in ["nifty", "sensex", "india", "rupee", "sebi", "rbi", "tata", "reliance"]):
                     cat_tag = "India & NSE"
+                elif any(k in title.lower() for k in ["bitcoin", "crypto", "fed", "rate", "inflation"]):
+                    cat_tag = "Crypto & Macro"
+                elif any(k in title.lower() for k in ["ai", "tech", "nvidia", "chip", "semiconductor", "apple", "tesla", "microsoft"]):
+                    cat_tag = "Tech & AI"
                 else:
                     cat_tag = "Global Markets"
-            else:
-                tag_map = {
-                    "markets": "Global Markets",
-                    "tech": "Tech & AI",
-                    "india": "India & NSE",
-                    "crypto": "Crypto & Macro"
-                }
-                cat_tag = tag_map.get(category, "Finance")
 
-            articles.append({
-                "id": f"art-{idx}-{abs(hash(title)) % 100000}",
-                "title": title,
-                "publisher": publisher,
-                "link": link,
-                "timeAgo": time_ago,
-                "relativeTime": time_ago,
-                "pubDate": pub_date,
-                "publishedAt": pub_date,
-                "tickers": tickers,
-                "category": cat_tag,
-                "summary": clean_summary if clean_summary and len(clean_summary) > 20 else title
-            })
+                clean_summary = extract_clean_summary(desc, title, publisher)
 
-        NEWS_CACHE[cache_key] = {"timestamp": now_ts, "data": articles}
-    except Exception as e:
-        if cache_key in NEWS_CACHE:
-            return {
-                "category": category,
-                "query": q_clean,
-                "count": len(NEWS_CACHE[cache_key]["data"]),
-                "items": NEWS_CACHE[cache_key]["data"],
-                "results": NEWS_CACHE[cache_key]["data"]
-            }
-        return {"category": category, "query": q_clean, "count": 0, "items": [], "results": [], "error": str(e)}
+                articles.append({
+                    "id": f"art-{idx}-{abs(hash(title)) % 100000}",
+                    "title": title,
+                    "publisher": publisher,
+                    "link": link,
+                    "timeAgo": time_ago,
+                    "relativeTime": time_ago,
+                    "pubDate": pub_date,
+                    "publishedAt": iso_date or pub_date,
+                    "timestamp": pub_ts,
+                    "tickers": tickers,
+                    "category": cat_tag,
+                    "summary": clean_summary
+                })
+        except Exception as e:
+            continue
+
+    # STRICT SORT: Always in sequence based on publication timestamp descending
+    articles.sort(key=lambda a: a.get("timestamp", 0), reverse=True)
+
+    # Slice to requested limit
+    final_articles = articles[:limit]
+
+    NEWS_CACHE[cache_key] = {"timestamp": now_ts, "data": final_articles}
 
     return {
         "category": category,
         "query": q_clean,
-        "count": len(articles),
-        "items": articles,
-        "results": articles
+        "count": len(final_articles),
+        "items": final_articles,
+        "results": final_articles
     }
 
 
