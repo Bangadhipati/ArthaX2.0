@@ -341,38 +341,195 @@ COMPANY_TICKER_MAP = [
     # US Tech & Mega Caps
     ("APPLE", "AAPL"),
     ("IPHONE", "AAPL"),
+    ("TIM COOK", "AAPL"),
     ("AAPL", "AAPL"),
     ("NVIDIA", "NVDA"),
+    ("JENSEN HUANG", "NVDA"),
     ("BLACKWELL", "NVDA"),
+    ("RUBIN", "NVDA"),
     ("NVDA", "NVDA"),
     ("TESLA", "TSLA"),
     ("ELON MUSK", "TSLA"),
     ("CYBERTRUCK", "TSLA"),
+    ("SPACEX", "TSLA"),
     ("TSLA", "TSLA"),
     ("MICROSOFT", "MSFT"),
+    ("SATYA NADELLA", "MSFT"),
     ("AZURE", "MSFT"),
+    ("OPENAI", "MSFT"),
     ("MSFT", "MSFT"),
     ("AMAZON", "AMZN"),
+    ("JEFF BEZOS", "AMZN"),
     ("AWS", "AMZN"),
     ("AMZN", "AMZN"),
     ("GOOGLE", "GOOGL"),
     ("ALPHABET", "GOOGL"),
+    ("SUNDAR PICHAI", "GOOGL"),
     ("GEMINI", "GOOGL"),
+    ("ANTHROPIC", "GOOGL"),
     ("GOOGL", "GOOGL"),
+    ("GOOG", "GOOGL"),
     ("META", "META"),
+    ("MARK ZUCKERBERG", "META"),
     ("FACEBOOK", "META"),
     ("INSTAGRAM", "META"),
+    ("WHATSAPP", "META"),
     ("NETFLIX", "NFLX"),
     ("NFLX", "NFLX"),
     ("AMD", "AMD"),
+    ("ADVANCED MICRO DEVICES", "AMD"),
+    ("LISA SU", "AMD"),
     ("INTEL", "INTC"),
+    ("INTC", "INTC"),
     ("QUALCOMM", "QCOM"),
+    ("QCOM", "QCOM"),
     ("BROADCOM", "AVGO"),
+    ("AVGO", "AVGO"),
+    ("TAIWAN SEMICONDUCTOR", "TSM"),
+    ("TSMC", "TSM"),
+    ("TSM", "TSM"),
+    ("ASML", "ASML"),
+    ("MICRON", "MU"),
+    ("ARM HOLDINGS", "ARM"),
+    ("ARM", "ARM"),
+    ("SUPER MICRO", "SMCI"),
+    ("SUPERMICRO", "SMCI"),
+    ("SMCI", "SMCI"),
     ("PALANTIR", "PLTR"),
     ("PLTR", "PLTR"),
+    ("ORACLE", "ORCL"),
+    ("LARRY ELLISON", "ORCL"),
+    ("ORCL", "ORCL"),
+    ("SALESFORCE", "CRM"),
+    ("CRM", "CRM"),
+    ("ADOBE", "ADBE"),
+    ("ADBE", "ADBE"),
+    ("CISCO", "CSCO"),
+    ("CSCO", "CSCO"),
+    ("IBM", "IBM"),
+    ("DELL", "DELL"),
+    ("UBER", "UBER"),
+    ("AIRBNB", "ABNB"),
+    ("ABNB", "ABNB"),
+    ("SPOTIFY", "SPOT"),
+    ("SPOT", "SPOT"),
+    ("SHOPIFY", "SHOP"),
+    ("SHOP", "SHOP"),
+    ("SNOWFLAKE", "SNOW"),
+    ("SNOW", "SNOW"),
+    ("COINBASE", "COIN"),
+    ("COIN", "COIN"),
+    ("PAYPAL", "PYPL"),
+    ("PYPL", "PYPL"),
+    ("SQUARE", "SQ"),
+    ("CASH APP", "SQ"),
+    ("EBAY", "EBAY"),
+    ("ROBINHOOD", "HOOD"),
+    ("HOOD", "HOOD"),
+
+    # US Finance & Banking Giants
+    ("JPMORGAN", "JPM"),
+    ("JP MORGAN", "JPM"),
+    ("JAMIE DIMON", "JPM"),
+    ("JPM", "JPM"),
+    ("GOLDMAN SACHS", "GS"),
+    ("GOLDMAN", "GS"),
+    ("GS", "GS"),
+    ("MORGAN STANLEY", "MS"),
+    ("BANK OF AMERICA", "BAC"),
+    ("BOFA", "BAC"),
+    ("BAC", "BAC"),
+    ("CITIGROUP", "C"),
+    ("CITI", "C"),
+    ("WELLS FARGO", "WFC"),
+    ("WFC", "WFC"),
+    ("BERKSHIRE HATHAWAY", "BRK-B"),
+    ("BERKSHIRE", "BRK-B"),
+    ("WARREN BUFFETT", "BRK-B"),
+    ("BLACKROCK", "BLK"),
+    ("LARRY FINK", "BLK"),
+    ("BLK", "BLK"),
+    ("VISA", "V"),
+    ("MASTERCARD", "MA"),
+    ("AMERICAN EXPRESS", "AXP"),
+    ("CHARLES SCHWAB", "SCHW"),
+
+    # US Aerospace, Defense & Industrial
     ("BOEING", "BA"),
+    ("737 MAX", "BA"),
     ("BA", "BA"),
-    
+    ("LOCKHEED MARTIN", "LMT"),
+    ("LOCKHEED", "LMT"),
+    ("RAYTHEON", "RTX"),
+    ("RTX", "RTX"),
+    ("GENERAL ELECTRIC", "GE"),
+    ("GE AEROSPACE", "GE"),
+    ("CATERPILLAR", "CAT"),
+    ("DEERE", "DE"),
+    ("JOHN DEERE", "DE"),
+    ("HONEYWELL", "HON"),
+    ("3M", "MMM"),
+
+    # US Retail, Consumer & Entertainment
+    ("WALMART", "WMT"),
+    ("WMT", "WMT"),
+    ("COSTCO", "COST"),
+    ("COST", "COST"),
+    ("TARGET CORP", "TGT"),
+    ("TARGET STORES", "TGT"),
+    ("DISNEY", "DIS"),
+    ("BOB IGER", "DIS"),
+    ("DIS", "DIS"),
+    ("STARBUCKS", "SBUX"),
+    ("SBUX", "SBUX"),
+    ("MCDONALD'S", "MCD"),
+    ("MCDONALDS", "MCD"),
+    ("MCD", "MCD"),
+    ("NIKE", "NKE"),
+    ("NKE", "NKE"),
+    ("COCA-COLA", "KO"),
+    ("COKE", "KO"),
+    ("PEPSICO", "PEP"),
+    ("PEPSI", "PEP"),
+    ("PROCTER & GAMBLE", "PG"),
+
+    # US Automotive & Energy
+    ("FORD MOTOR", "F"),
+    ("FORD MOTORS", "F"),
+    ("GENERAL MOTORS", "GM"),
+    ("RIVIAN", "RIVN"),
+    ("LUCID", "LCID"),
+    ("EXXON MOBIL", "XOM"),
+    ("EXXON", "XOM"),
+    ("XOM", "XOM"),
+    ("CHEVRON", "CVX"),
+    ("CVX", "CVX"),
+    ("OCCIDENTAL", "OXY"),
+    ("OXY", "OXY"),
+    ("SHELL", "SHEL"),
+    ("BRITISH PETROLEUM", "BP"),
+
+    # Healthcare & Pharma
+    ("ELI LILLY", "LLY"),
+    ("LILLY", "LLY"),
+    ("MOUNJARO", "LLY"),
+    ("ZEPBOUND", "LLY"),
+    ("LLY", "LLY"),
+    ("NOVO NORDISK", "NVO"),
+    ("OZEMPIC", "NVO"),
+    ("WEGOVY", "NVO"),
+    ("NVO", "NVO"),
+    ("PFIZER", "PFE"),
+    ("PFE", "PFE"),
+    ("MODERNA", "MRNA"),
+    ("MRNA", "MRNA"),
+    ("JOHNSON & JOHNSON", "JNJ"),
+    ("JNJ", "JNJ"),
+    ("ABBOTT", "ABT"),
+    ("ABT", "ABT"),
+    ("UNITEDHEALTH", "UNH"),
+    ("ABBVIE", "ABBV"),
+
     # India & NSE Bluechips
     ("RELIANCE INDUSTRIES", "RELIANCE.NS"),
     ("RELIANCE", "RELIANCE.NS"),
@@ -382,28 +539,88 @@ COMPANY_TICKER_MAP = [
     ("TATAMOTORS", "TATAMOTORS.NS"),
     ("TATA CONSULTANCY", "TCS.NS"),
     ("TCS", "TCS.NS"),
+    ("TATA STEEL", "TATASTEEL.NS"),
+    ("TATA POWER", "TATAPOWER.NS"),
     ("TATA", "TATAMOTORS.NS"),
     ("INFOSYS", "INFY.NS"),
     ("INFY", "INFY.NS"),
+    ("WIPRO", "WIPRO.NS"),
+    ("HCL TECH", "HCLTECH.NS"),
+    ("HCLTECH", "HCLTECH.NS"),
+    ("TECH MAHINDRA", "TECHM.NS"),
     ("HDFC BANK", "HDFCBANK.NS"),
     ("HDFC", "HDFCBANK.NS"),
     ("ICICI BANK", "ICICIBANK.NS"),
     ("ICICI", "ICICIBANK.NS"),
     ("STATE BANK OF INDIA", "SBIN.NS"),
     ("SBI", "SBIN.NS"),
+    ("KOTAK MAHINDRA", "KOTAKBANK.NS"),
+    ("KOTAK BANK", "KOTAKBANK.NS"),
+    ("KOTAK", "KOTAKBANK.NS"),
+    ("AXIS BANK", "AXISBANK.NS"),
+    ("AXIS", "AXISBANK.NS"),
+    ("LARSEN & TOUBRO", "LT.NS"),
+    ("LARSEN", "LT.NS"),
+    ("L&T", "LT.NS"),
+    ("BHARTI AIRTEL", "BHARTIARTL.NS"),
+    ("AIRTEL", "BHARTIARTL.NS"),
+    ("ITC", "ITC.NS"),
+    ("HINDUSTAN UNILEVER", "HINDUNILVR.NS"),
+    ("HUL", "HINDUNILVR.NS"),
+    ("ADANI ENTERPRISES", "ADANIENT.NS"),
+    ("ADANI PORTS", "ADANIPORTS.NS"),
+    ("ADANI POWER", "ADANIPOWER.NS"),
+    ("ADANI", "ADANIENT.NS"),
+    ("BAJAJ FINANCE", "BAJFINANCE.NS"),
+    ("BAJAJ FINSERV", "BAJAJFINSV.NS"),
+    ("MARUTI SUZUKI", "MARUTI.NS"),
+    ("MARUTI", "MARUTI.NS"),
+    ("MAHINDRA & MAHINDRA", "M&M.NS"),
+    ("MAHINDRA", "M&M.NS"),
+    ("SUN PHARMA", "SUNPHARMA.NS"),
+    ("TITAN", "TITAN.NS"),
+    ("ASIAN PAINTS", "ASIANPAINT.NS"),
+    ("ULTRATECH CEMENT", "ULTRACEMCO.NS"),
+    ("ULTRATECH", "ULTRACEMCO.NS"),
+    ("NTPC", "NTPC.NS"),
+    ("POWER GRID", "POWERGRID.NS"),
+    ("COAL INDIA", "COALINDIA.NS"),
+    ("ONGC", "ONGC.NS"),
+    ("BHARAT ELECTRONICS", "BEL.NS"),
+    ("BEL", "BEL.NS"),
+    ("HINDUSTAN AERONAUTICS", "HAL.NS"),
+    ("HAL", "HAL.NS"),
+    ("ZOMATO", "ZOMATO.NS"),
+    ("SWIGGY", "ZOMATO.NS"),
+    ("PAYTM", "PAYTM.NS"),
+    ("JIO FINANCIAL", "JIOFIN.NS"),
     ("NIFTY 50", "NIFTY"),
     ("NIFTY", "NIFTY"),
     ("SENSEX", "SENSEX"),
-    
+    ("DALAL STREET", "NIFTY"),
+    ("BSE", "SENSEX"),
+    ("NSE", "NIFTY"),
+
     # Crypto & Global Benchmarks
     ("BITCOIN", "BTC-USD"),
     ("BTC", "BTC-USD"),
     ("ETHEREUM", "ETH-USD"),
+    ("ETHER", "ETH-USD"),
     ("ETH", "ETH-USD"),
+    ("SOLANA", "SOL-USD"),
+    ("SOL", "SOL-USD"),
     ("S&P 500", "S&P 500"),
     ("SP500", "S&P 500"),
+    ("SPX", "S&P 500"),
+    ("WALL STREET", "S&P 500"),
     ("NASDAQ", "NASDAQ"),
-    ("DOW JONES", "DOW")
+    ("DOW JONES", "DOW"),
+    ("DOW", "DOW"),
+    ("FEDERAL RESERVE", "S&P 500"),
+    ("JEROME POWELL", "S&P 500"),
+    ("TREASURY YIELDS", "S&P 500"),
+    ("RATE CUT", "S&P 500"),
+    ("INFLATION", "S&P 500")
 ]
 
 INDEX_SYMBOLS = {
@@ -426,7 +643,17 @@ INDEX_SYMBOLS = {
 def extract_news_tickers(text: str) -> list:
     """Identifies prominent market asset and ticker mentions by company name or ticker symbol."""
     found = []
-    text_upper = text.upper()
+    # Strip URL links and common news feed artifacts
+    clean = re.sub(r'https?://\S+', ' ', text)
+    clean = re.sub(r'Google News.*', ' ', clean, flags=re.IGNORECASE)
+    clean = re.sub(r'View Full Coverage.*', ' ', clean, flags=re.IGNORECASE)
+    clean = re.sub(r'See more headlines.*', ' ', clean, flags=re.IGNORECASE)
+    text_upper = clean.upper()
+
+    # Check if Google / Alphabet is explicitly referenced
+    if re.search(r'\b(GOOGLE SEARCH|GOOGLE CLOUD|GOOGLE AI|ALPHABET|SUNDAR PICHAI)\b', text_upper):
+        found.append('GOOGL')
+
     for kw, sym in COMPANY_TICKER_MAP:
         # Match as whole word/phrase to avoid substring collisions
         pattern = r"\b" + re.escape(kw) + r"\b"
@@ -434,6 +661,8 @@ def extract_news_tickers(text: str) -> list:
             clean_sym = sym.replace("^", "")
             if clean_sym not in found:
                 found.append(clean_sym)
+                if len(found) >= 3:
+                    break
     return found
 
 
@@ -636,8 +865,11 @@ def get_financial_news(
                     iso_date = datetime.fromtimestamp(pub_ts).isoformat()
                     time_ago = "Recent"
 
-                # Extract tickers
-                tickers = extract_news_tickers(title)
+                clean_summary = extract_clean_summary(desc, title, publisher)
+
+                # Extract relevant tickers by scanning clean headline and summary
+                clean_searchable_text = f"{title} {clean_summary}"
+                tickers = extract_news_tickers(clean_searchable_text)
                 if not tickers and q_clean:
                     tickers = extract_news_tickers(q_clean)
 
@@ -651,7 +883,21 @@ def get_financial_news(
                 else:
                     cat_tag = "Global Markets"
 
-                clean_summary = extract_clean_summary(desc, title, publisher)
+                # Contextual thematic fallback so every card gets relevant clickable ticker buttons
+                if not tickers:
+                    lower_comb = combined_text.lower()
+                    if is_indian_feed or any(k in lower_comb for k in ["india", "nifty", "sensex", "dalal", "rupee", "sebi", "rbi"]):
+                        tickers = ["NIFTY", "SENSEX"]
+                    elif any(k in lower_comb for k in ["bitcoin", "crypto", "ether", "blockchain", "solana"]):
+                        tickers = ["BTC-USD"]
+                    elif any(k in lower_comb for k in ["tech", "ai", "artificial intelligence", "chip", "semiconductor", "cloud", "software"]):
+                        tickers = ["NASDAQ", "NVDA"]
+                    elif any(k in lower_comb for k in ["oil", "crude", "energy", "opec", "gasoline", "barrel"]):
+                        tickers = ["XOM", "CVX"]
+                    elif any(k in lower_comb for k in ["bank", "fed", "federal reserve", "interest rate", "powell", "treasury", "inflation"]):
+                        tickers = ["S&P 500", "JPM"]
+                    else:
+                        tickers = ["S&P 500"]
 
                 articles.append({
                     "id": f"art-{idx}-{abs(hash(title)) % 100000}",
