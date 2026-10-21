@@ -22,10 +22,7 @@
 
   <p align="center">
     <a href="https://astragenx-arthax.vercel.app/"><strong>🌐 Open Live Terminal »</strong></a> •
-    <a href="https://huggingface.co/spaces/Bangadhipati/ArthaX"><strong>🤗 Old Prototype (Hugging Face) »</strong></a> •
-    <a href="#-system-features"><strong>Explore Features »</strong></a> •
-    <a href="#-local-development--running-guide"><strong>Run Locally »</strong></a> •
-    <a href="#-cloud-deployment-guide"><strong>Deployment Guide »</strong></a>
+    <a href="https://huggingface.co/spaces/Bangadhipati/ArthaX"><strong>🤗 Old Prototype (Hugging Face) »</strong></a>
   </p>
 
 </div>
